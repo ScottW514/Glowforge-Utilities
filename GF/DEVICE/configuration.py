@@ -1,6 +1,6 @@
 """
 Copyright 2017 Scott Wiederhold
-This file is part of GF-Library.
+This file is part of Glowforge-Utilities.
 
     GF-Library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
