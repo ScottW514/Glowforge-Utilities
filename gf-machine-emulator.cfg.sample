@@ -1,0 +1,57 @@
+[GENERAL]
+base_dir: _RESOURCES
+log_file: %(base_dir)s/LOG/emulator.log
+log_level: DEBUG
+
+# Uncommenting this line will cause the log message to be displayed on the console
+console_log_level: DEBUG
+
+motion_dir: %(base_dir)s/MOTION
+firmware_check: True
+firmware_dir: %(base_dir)s/FW
+image_dir: %(base_dir)s/IMG
+
+[SERVICE]
+server_url: https://app.glowforge.com
+status_service_url: wss://status.glowforge.com
+
+[MACHINE]
+ip_address: 192.168.100.101
+
+# See below for instructions on obtaining this information
+# DO NOT SHARE THIS INFORMATION - IT CANNOT BE CHANGED
+serial: 12345678
+hostname: ABC-123
+password: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+head_serial: 123456789
+
+# This is the most recent info
+firmware: 1.2.1-1031
+app_version: 9dcdfae60a301746a5e2c97b4722a7e051925d08
+head_firmware: 199234110
+
+
+[MATERIAL]
+thickness: .230
+
+
+#######################################################################################
+# Obtaining your machine login information
+# Hostname is simple.  It's the identifier shown at the command prompt (use all caps).
+# To obtain the serial number, enter the following in the python shell on your GF:
+#   def read_file(filename):
+#       with open(filename) as f:
+#           return f.read()
+# int(read_file('/sys/fsl_otp/HW_OCOTP_MAC0'), 16)
+#
+# To obtain the password, enter the following in the python shell on your GF:
+#   def read_file(filename):
+#       with open(filename) as f:
+#           return f.read()
+#   password = ''
+#   for x in range(8):
+#       password += "%08x" % int(read_file('/sys/fsl_otp/HW_OCOTP_SRK%d' % i), 16)
+#   print password
+#
+# KEEP THESE SECRET!!!!!!
+
