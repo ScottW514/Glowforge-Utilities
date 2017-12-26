@@ -2,12 +2,12 @@
 Copyright 2017 Scott Wiederhold
 This file is part of Glowforge-Utilities.
 
-    GF-Library is free software: you can redistribute it and/or modify
+    Glowforge-Utilities is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    GF-Library is distributed in the hope that it will be useful,
+    Glowforge-Utilities is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -62,10 +62,10 @@ def _api_head_image(s, q, cfg, msg):
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['head_image'][0], 1: _ACTIONS['head_image'][1]})
     if msg['settings']['HCil'] > 0:
-        logging.info('LASER DIDOE ON')
+        logging.info('LASER DIODE ON')
         img = 'HEAD_LASER_%s.jpg' % cfg['MATERIAL.THICKNESS']
     else:
-        logging.info('LASER DIDOE OFF')
+        logging.info('LASER DIODE OFF')
         img = 'HEAD_NO_LASER_%s.jpg' % cfg['MATERIAL.THICKNESS']
     web_api.run_cmd('img_upload', s=s, cfg=cfg, img=img, msg=msg)
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['head_image'][2]})
