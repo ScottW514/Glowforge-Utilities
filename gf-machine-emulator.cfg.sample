@@ -23,6 +23,7 @@ ip_address: 192.168.100.101
 serial: 12345678
 hostname: ABC-123
 password: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# This may not matter
 head_serial: 123456789
 
 # This is the most recent info
@@ -42,7 +43,7 @@ thickness: .230
 #   def read_file(filename):
 #       with open(filename) as f:
 #           return f.read()
-# int(read_file('/sys/fsl_otp/HW_OCOTP_MAC0'), 16)
+#   int(read_file('/sys/fsl_otp/HW_OCOTP_MAC0'), 16)
 #
 # To obtain the password, enter the following in the python shell on your GF:
 #   def read_file(filename):
@@ -50,7 +51,7 @@ thickness: .230
 #           return f.read()
 #   password = ''
 #   for x in range(8):
-#       password += "%08x" % int(read_file('/sys/fsl_otp/HW_OCOTP_SRK%d' % i), 16)
+#       password += "%08x" % int(read_file('/sys/fsl_otp/HW_OCOTP_SRK%d' % d), 16)
 #   print password
 #
 # KEEP THESE SECRET!!!!!!
