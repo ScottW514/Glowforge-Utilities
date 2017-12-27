@@ -115,7 +115,7 @@ _REPORTED_SETTINGS = {
     "EFwx": 0,
 ####### ???????? #######
     "FCsn": 0,
-####### ???????? #######
+####### FILTER EXHAUST #######
     "FEdc": 0,
     "FEid": 0,
     "FEil": 0,
@@ -134,7 +134,7 @@ _REPORTED_SETTINGS = {
     "FEwl": 0,
     "FEwn": 0,
     "FEwx": 0,
-####### ???????? #######
+####### FILTER INPUT #######
     "FIdc": 0,
     "FIid": 0,
     "FIil": 0,
@@ -342,8 +342,8 @@ _REPORTED_SETTINGS = {
     "PAli": 1000,  # (int) Purge Air - Logging Interval
     "PAon": 1,     # (int) Purge Air - On
     "PApd": 1000,  # (int) Purge Air - PWM Period
-####### ???????? #######
-    "PCid": 19795,
+####### PIC ID #######
+    "PCid": 19795,  #SM found in slot 0
 ####### ???????? #######
     "PRcp": 2.875,
     "PRfc": 0,
