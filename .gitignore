@@ -113,3 +113,5 @@ _RESOURCES/MOTION/
 # Keep PyCharm users (ScottW, for one) from sharing their IDE settings with everyone.
 .idea/
 
+# Freely write scripts starting with "test" that won't be uploaded to Github
+test*

@@ -13,7 +13,7 @@ This file is part of Glowforge-Utilities.
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with GF-Library.  If not, see <http://www.gnu.org/licenses/>.
+    along with Glowforge-Utilities.  If not, see <http://www.gnu.org/licenses/>.
 
 
 TODO: Error checking/handling of some kind

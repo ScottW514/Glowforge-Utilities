@@ -13,7 +13,7 @@ This file is part of Glowforge-Utilities.
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with GF-Library.  If not, see <http://www.gnu.org/licenses/>.
+    along with Glowforge-Utilities.  If not, see <http://www.gnu.org/licenses/>.
 
 
 TODO: Error checking/handling of some kind
@@ -23,7 +23,7 @@ import collections
 n_dict = lambda: collections.defaultdict(n_dict)
 
 
-def decode_header(header):
+def decode(header):
     dec_header = n_dict()
     s = 0
     while s < len(header):

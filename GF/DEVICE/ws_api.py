@@ -13,7 +13,7 @@ This file is part of Glowforge-Utilities.
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with GF-Library.  If not, see <http://www.gnu.org/licenses/>.
+    along with Glowforge-Utilities.  If not, see <http://www.gnu.org/licenses/>.
 
 
 TODO: Error checking/handling of some kind
@@ -21,7 +21,7 @@ TODO: Error checking/handling of some kind
 from . import web_api, _ACTIONS, _STATES
 import time
 import logging
-from ..SETTINGS.settings import settings_report
+from ..SETTINGS import settings
 
 
 """
@@ -85,9 +85,9 @@ def _api_hunt(s, q, cfg, msg):
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'MOTION_URL': msg['motion_url']}, {0: _ACTIONS['hunt'][0]})
     puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.total_steps}, {0: _ACTIONS['hunt'][1]})
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['hunt'][1]})
     # REAL_RUN_TIME will go here
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.total_steps},
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
                      {0: _ACTIONS['hunt'][2], 1: _ACTIONS['hunt'][3],
                       2: _ACTIONS['hunt'][4], 3: _ACTIONS['hunt'][5],
                       4: _ACTIONS['hunt'][6]})
@@ -136,9 +136,9 @@ def _api_motion(s, q, cfg, msg):
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'MOTION_URL': msg['motion_url']}, {0: _ACTIONS['motion'][0]})
     puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.total_steps}, {0: _ACTIONS['motion'][1]})
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['motion'][1]})
     # REAL_RUN_TIME will go here
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.total_steps},
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
                      {0: _ACTIONS['motion'][2], 1: _ACTIONS['motion'][3],
                       2: _ACTIONS['motion'][4], 3: _ACTIONS['motion'][5]})
     logging.info('COMPLETE')
@@ -157,9 +157,9 @@ def _api_print(s, q, cfg, msg):
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'MOTION_URL': msg['motion_url']}, {0: _ACTIONS['print'][0]})
     puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.total_steps}, {0: _ACTIONS['print'][1]})
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['print'][1]})
     # REAL_RUN_TIME will go here
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.total_steps},
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
                      {0: _ACTIONS['print'][2], 1: _ACTIONS['print'][3],
                       2: _ACTIONS['print'][4], 3: _ACTIONS['print'][5],
                       4: _ACTIONS['print'][6], 5: _ACTIONS['print'][7],
@@ -180,7 +180,7 @@ def _api_settings(s, q, cfg, msg):
     """
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'],
-                                 'SETTINGS': settings_report(cfg)}, {0: _ACTIONS['settings'][0]})
+                                 'SETTINGS': settings.report(cfg)}, {0: _ACTIONS['settings'][0]})
     logging.info('COMPLETE')
     return True
 

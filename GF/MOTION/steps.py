@@ -13,7 +13,7 @@ This file is part of Glowforge-Utilities.
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with GF-Library.  If not, see <http://www.gnu.org/licenses/>.
+    along with Glowforge-Utilities.  If not, see <http://www.gnu.org/licenses/>.
 
 
 TODO: Error checking/handling of some kind
@@ -30,7 +30,7 @@ _decode_step_codes = {
 }
 
 
-def decode_step(raw_step):
+def decode(raw_step):
     """
     Decodes raw steps
     :param raw_step: {str} Binary representation of step
@@ -50,3 +50,34 @@ def decode_step(raw_step):
                 False if (step & _decode_step_codes[action]['mask']) ^ _decode_step_codes[action]['test'] else True
 
     return step_actions
+
+
+def find(raw_pulse, search_axis=None, direction=None):
+    """
+    Returns pulse number with first occurrence of step
+    :param raw_pulse: {
+    :param search_axis: (str) Which axis to look for pulse from ('X','Y','Z'). Defaults to any.
+    :param direction: (bool) True for positive, False for negative. Defaults to None for any.
+    :return: {int} pulse number, or False if not found
+    """
+    axis_list = ['X', 'Y', 'Z']
+
+    if search_axis is None:
+        search_axis = axis_list
+    else:
+        search_axis = [search_axis]
+
+    pulse_number = 0
+    step_found = False
+
+    for pulse in raw_pulse:
+        if step_found:
+            break
+        pulse_number += 1
+        decoded_pulse = decode(pulse)
+        for axis in search_axis:
+            if (decoded_pulse[axis + 'P'] and (direction is None or direction)) or \
+                    (decoded_pulse[axis + 'N'] and (direction is None or not direction)):
+                step_found = pulse_number
+
+    return step_found

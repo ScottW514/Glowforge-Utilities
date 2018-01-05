@@ -13,7 +13,7 @@ This file is part of Glowforge-Utilities.
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with GF-Library.  If not, see <http://www.gnu.org/licenses/>.
+    along with Glowforge-Utilities.  If not, see <http://www.gnu.org/licenses/>.
 
 
 TODO: Error checking/handling of some kind
@@ -22,7 +22,7 @@ from . import _REPORTED_SETTINGS, _MOTION_SETTINGS
 import time
 
 
-def settings_report(cfg):
+def report(cfg):
     """
     Generate device settings report
     :param cfg: {dict} Emulator's configuration dictionary
@@ -50,7 +50,7 @@ def settings_report(cfg):
     return '{%s}' % settings[:-1]
 
 
-def decode_motion_settings(header):
+def decode_motion(header):
     settings = {}
     for item in header:
         if item in _MOTION_SETTINGS:

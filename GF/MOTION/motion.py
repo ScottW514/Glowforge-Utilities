@@ -13,13 +13,13 @@ This file is part of Glowforge-Utilities.
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with GF-Library.  If not, see <http://www.gnu.org/licenses/>.
+    along with Glowforge-Utilities.  If not, see <http://www.gnu.org/licenses/>.
 
 
 TODO: Error checking/handling of some kind
 """
-from .header import decode_header
-from ..SETTINGS.settings import decode_motion_settings
+import header
+from GF.SETTINGS import settings
 
 
 class Motion:
@@ -29,10 +29,11 @@ class Motion:
         :param mfile: Motion file to load
         """
         self._load_file(mfile)
-        self.header = decode_header(self.raw_header)
-        self.settings = decode_motion_settings(self.header)
-        self.total_steps = len(self.raw_pulse)
-        self.cur_position = {'X': 0, 'Y': 0, 'Z': 0}
+        self.header = header.decode(self.raw_header)
+        self.settings = settings.decode_motion(self.header)
+        self.pulse_total = len(self.raw_pulse)
+        self.pulse_current = 1
+        self.position_current = {'X': 0, 'Y': 0, 'Z': 0}
 
     def _load_file(self, mfile):
         """
