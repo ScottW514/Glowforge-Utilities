@@ -158,7 +158,8 @@ def _api_print(s, q, cfg, msg):
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'MOTION_URL': msg['motion_url']}, {0: _ACTIONS['print'][0]})
     puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['print'][1]})
-    # REAL_RUN_TIME will go here
+    # TODO: REAL_RUN_TIME will go here
+    # BREAK HERE TO PAUSE BEFORE BUTTON PUSH
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
                      {0: _ACTIONS['print'][2], 1: _ACTIONS['print'][3],
                       2: _ACTIONS['print'][4], 3: _ACTIONS['print'][5],
