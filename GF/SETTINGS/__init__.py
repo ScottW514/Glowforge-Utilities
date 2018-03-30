@@ -5,17 +5,17 @@ __all__ = ['settings']
 _REPORTED_SETTINGS = {
 ####### AIR ASSIST #######
     "AAdc": 204,
-    "AAid": 204,  # (int) Air Assist PWM
+    "AAid": 204,  # (int) Air Assist PWM Duty Cycle 0-1023 (Possibly Warm Up Phase)
     "AAil": 1000,
     "AAin": 0,
     "AAix": 0,
     "AAli": 1000,
-    "AArd": 0,
+    "AArd": 0,    # (int) Air Assist PWM Duty Cycle 0-1023 (Likely Run Phase)
     "AArl": 1000,
     "AArn": 0,
     "AArx": 0,
     "AAtv": 3457,
-    "AAwd": 0,
+    "AAwd": 0,    # (int) Air Assist PWM Duty Cycle 0-1023 (Possibly Cool Down Phase))
     "AAwl": 1000,
     "AAwn": 0,
     "AAwx": 0,
@@ -99,17 +99,17 @@ _REPORTED_SETTINGS = {
     "CMwx": 35000,
 ####### EXHAUST FAN #######
     "EFdc": 0,
-    "EFid": 0,
+    "EFid": 0,    # (int) Exhaust Fan PWM Duty Cycle 0-65535 (Possibly Warm Up Phase))
     "EFil": 1000,
     "EFin": 0,
     "EFix": 0,
     "EFli": 1000,
-    "EFrd": 0,
+    "EFrd": 0,    # (int) Exhaust Fan PWM Duty Cycle 0-65535 (Likely Run Phase))
     "EFrl": 1000,
     "EFrn": 0,
     "EFrx": 0,
     "EFtv": 0,
-    "EFwd": 0,
+    "EFwd": 0,    # (int) Exhaust Fan PWM Duty Cycle 0-65535 (Possibly Cool down Phase))
     "EFwl": 1000,
     "EFwn": 0,
     "EFwx": 0,
@@ -231,18 +231,18 @@ _REPORTED_SETTINGS = {
     "IAid": 0,
 ####### INTAKE FAN #######
     "IFdc": 0,
-    "IFid": 0,
+    "IFid": 0,    # (int) Intake Fan PWM Duty Cycle 0-65535 (Possibly Warm Up Phase))
     "IFil": 1000,
     "IFin": 0,
     "IFix": 0,
     "IFli": 1000,
-    "IFrd": 0,
+    "IFrd": 0,    # (int) Exhaust Fan PWM Duty Cycle 0-65535 (Likely Run Phase))
     "IFrl": 1000,
     "IFrn": 0,
     "IFrx": 0,
     "IFta": 40882666,
     "IFtb": 40424667,
-    "IFwd": 0,
+    "IFwd": 0,    # (int) Exhaust Fan PWM Duty Cycle 0-65535 (Possibly Cool down Phase))
     "IFwl": 1000,
     "IFwn": 0,
     "IFwx": 0,
@@ -402,13 +402,13 @@ _REPORTED_SETTINGS = {
 _MOTION_SETTINGS = {
 
 ####### AIR-ASSIST #######
-    "AAid": 'Initial Air Assist PWM',
+    "AAid": 'Warm up Air Assist PWM',
     "AAin": None,
     "AAix": None,
     "AArd": 'Run Air Assist PWM',
     "AArn": None,
     "AArx": None,
-    "AAwd": 'Wind Down Air Assist PWM',
+    "AAwd": 'Cool down Air Assist PWM',
     "AAwn": None,
     "AAwx": None,
 ####### BOARD TEMP #######
@@ -428,13 +428,13 @@ _MOTION_SETTINGS = {
     "CMwn": None,
     "CMwx": None,
 ####### EXHAUST FAN #######
-    "EFid": 'Initial Exhaust PWM',
+    "EFid": 'Warm up Exhaust PWM',
     "EFin": None,
     "EFix": None,
     "EFrd": 'Run Exhaust PWM',
     "EFrn": None,
     "EFrx": None,
-    "EFwd": 'Wind Down Exhaust PWM',
+    "EFwd": 'Cool down Exhaust PWM',
     "EFwn": None,
     "EFwx": None,
 ####### ??????????? #######
@@ -451,13 +451,13 @@ _MOTION_SETTINGS = {
     "HTwn": None,
     "HTwx": None,
 ####### INTAKE FAN #######
-    "IFid": 'Initiating Intake PWM',
+    "IFid": 'Warm up Intake PWM',
     "IFin": None,
     "IFix": None,
     "IFrd": 'Run Intake PWM',
     "IFrn": None,
     "IFrx": None,
-    "IFwd": 'Cooldown Intake PWM',
+    "IFwd": 'Cool down Intake PWM',
     "IFwn": None,
     "IFwx": None,
 ####### LID TEMP #######
@@ -467,8 +467,8 @@ _MOTION_SETTINGS = {
     "LTwx": None,
 ####### MACHINE CONTROL #######
     "MCsn": 'Device Serial Number',
-####### ???????? #######
-    "PCid": None,  # This seems to match the value reported in the settings by the device
+####### PIC ID #######
+    "PCid": 'PIC Version ID',  # This seems to match the value reported in the settings by the device
 ####### ???????? #######
     "PDct": None,
     "PDfm": None,
