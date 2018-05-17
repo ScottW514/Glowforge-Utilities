@@ -18,7 +18,7 @@ This file is part of Glowforge-Utilities.
 
 TODO: Error checking/handling of some kind
 """
-import header
+from . import header
 from GF.SETTINGS import settings
 
 
