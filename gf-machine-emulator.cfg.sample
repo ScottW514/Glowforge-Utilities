@@ -27,8 +27,8 @@ password: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 head_serial: 123456789
 
 # This is the most recent info
-firmware: 1.5.0-31
-app_version: 95ad0ffb567a2f458e3da84d663f6e49ee222584
+firmware: 1.6.0-35
+app_version: c1d0043e0d8ebaf8e477473c4d558f578196f7bf
 head_firmware: 199234110
 
 
