@@ -1,5 +1,5 @@
 """
-Copyright 2017 Scott Wiederhold
+Copyright 2018 Scott Wiederhold
 This file is part of Glowforge-Utilities.
 
     Glowforge-Utilities is free software: you can redistribute it and/or modify
@@ -18,7 +18,10 @@ This file is part of Glowforge-Utilities.
 
 TODO: Error checking/handling of some kind
 """
-import ConfigParser
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 
 def parse(cfg_file):
@@ -33,7 +36,7 @@ def parse(cfg_file):
         'console_log_level': 'False',
     }
     cfg = {}
-    config = ConfigParser.SafeConfigParser(defaults)
+    config = configparser.SafeConfigParser(defaults)
     config.read(cfg_file)
     for section in config.sections():
         for item in config.items(section):

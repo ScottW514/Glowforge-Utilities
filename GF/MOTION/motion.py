@@ -1,5 +1,5 @@
 """
-Copyright 2017 Scott Wiederhold
+Copyright 2018 Scott Wiederhold
 This file is part of Glowforge-Utilities.
 
     Glowforge-Utilities is free software: you can redistribute it and/or modify
@@ -28,12 +28,15 @@ class Motion:
         Initial Class
         :param mfile: Motion file to load
         """
+        self.raw_header = ''
+        self.raw_pulse = ''
         self._load_file(mfile)
         self.header = header.decode(self.raw_header)
         self.settings = settings.decode_motion(self.header)
         self.pulse_total = len(self.raw_pulse)
         self.pulse_current = 1
         self.position_current = {'X': 0, 'Y': 0, 'Z': 0}
+        self.source_file = mfile
 
     def _load_file(self, mfile):
         """

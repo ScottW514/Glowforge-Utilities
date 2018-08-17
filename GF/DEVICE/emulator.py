@@ -1,5 +1,5 @@
 """
-Copyright 2017 Scott Wiederhold
+Copyright 2018 Scott Wiederhold
 This file is part of Glowforge-Utilities.
 
     Glowforge-Utilities is free software: you can redistribute it and/or modify
@@ -20,7 +20,12 @@ TODO: Error checking/handling of some kind
 """
 from . import actions, configuration, connection, websocket, _STATES
 from .authentication import authenticate_machine
-import Queue
+
+try:
+    import Queue as queue
+except ImportError:
+    import queue
+
 import json
 import time
 import logging
@@ -39,7 +44,8 @@ class Emulator:
         """
         self.cfg = configuration.parse(cfg_file)
         self.session = None
-        self.q = {'rx': Queue.Queue(), 'tx': Queue.Queue()}
+        self.handlers = {}
+        self.q = {'rx': queue.Queue(), 'tx': queue.Queue()}
         # Set up Logging
         if self.cfg['GENERAL.CONSOLE_LOG_LEVEL']:
             logging.basicConfig(format='(%(levelname)s) %(module)s:%(funcName)s %(message)s',
@@ -80,13 +86,22 @@ class Emulator:
                 msg = json.loads(self.q['rx'].get())
                 logging.info('SERVICE ACTION: %s (%s)' % (msg['action_type'], msg['status']))
                 if msg['status'] == 'ready':
-                    actions.run_action('ws', msg['action_type'], s=self.session, q=self.q, cfg=self.cfg, msg=msg)
+                    actions.run_action('ws', msg['action_type'],
+                                       s=self.session, q=self.q, cfg=self.cfg, msg=msg, handlers=self.handlers)
                     logging.info('%s (%s) SERVICE ACTION PROCESSED' % (msg['action_type'], msg['status']))
                     _STATES['last_action'] = msg['action_type']
                 else:
                     logging.info('%s (%s) SERVICE ACTION IGNORED' % (msg['action_type'], msg['status']))
                 self.q['rx'].task_done()
             time.sleep(.5)
+
+    def set_print_handler(self, handler):
+        """
+        Sets method to handle print calls.
+        :param handler: {object} Print Handler Method
+        :return:
+        """
+        self.handlers['print'] = handler
 
     def _log_level(self, level_str):
         """

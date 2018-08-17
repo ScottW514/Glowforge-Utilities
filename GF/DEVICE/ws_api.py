@@ -1,5 +1,5 @@
 """
-Copyright 2017 Scott Wiederhold
+Copyright 2018 Scott Wiederhold
 This file is part of Glowforge-Utilities.
 
     Glowforge-Utilities is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ def run_cmd(cmd, **kwargs):
         return False
 
 
-def _api_head_image(s, q, cfg, msg):
+def _api_head_image(s, q, cfg, msg, **kwargs):
     """
     Uploads head image.
     Sends either the laser on or laser off image, selected for the proper thickness.
@@ -73,7 +73,7 @@ def _api_head_image(s, q, cfg, msg):
     return True
 
 
-def _api_hunt(s, q, cfg, msg):
+def _api_hunt(s, q, cfg, msg, **kwargs):
     """
     Executes hunt actions
     :param s: {Session} Requests Session object
@@ -93,7 +93,7 @@ def _api_hunt(s, q, cfg, msg):
     return True
 
 
-def _api_lid_image(s, q, cfg, msg):
+def _api_lid_image(s, q, cfg, msg, **kwargs):
     """
     Uploads lid image
     Which image we send depends on whether or not we are homing.  If we are, then we send the homing images
@@ -122,7 +122,7 @@ def _api_lid_image(s, q, cfg, msg):
     return True
 
 
-def _api_motion(s, q, cfg, msg):
+def _api_motion(s, q, cfg, msg, **kwargs):
     """
     Executes motion commands (not printing)
     :param s: {Session} Requests Session object
@@ -143,21 +143,24 @@ def _api_motion(s, q, cfg, msg):
     return True
 
 
-def _api_print(s, q, cfg, msg):
+def _api_print(s, q, cfg, msg, handlers, **kwargs):
     """
     Executes Print Job
     :param s: {Session} Requests Session object
     :param q: {Queue} WSS message queue
     :param cfg: {dict} Emulator's configuration dictionary
     :param msg: {dict} WSS Message
+    :param handlers: {dict} Handlers
     :return:
     """
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'MOTION_URL': msg['motion_url']}, {0: _ACTIONS['print'][0]})
     puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['print'][1]})
-    # TODO: REAL_RUN_TIME will go here
-    # BREAK HERE TO PAUSE BEFORE BUTTON PUSH
+
+    if 'print' in handlers and handlers['print']:
+        handlers['print'](puls)
+
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
                      {0: _ACTIONS['print'][2], 1: _ACTIONS['print'][3],
                       2: _ACTIONS['print'][4], 3: _ACTIONS['print'][5],
@@ -168,7 +171,7 @@ def _api_print(s, q, cfg, msg):
     return True
 
 
-def _api_settings(s, q, cfg, msg):
+def _api_settings(s, q, cfg, msg, **kwargs):
     """
     Send setting report
     :param s: {Session} Requests Session object
