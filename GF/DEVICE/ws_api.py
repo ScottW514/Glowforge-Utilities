@@ -83,14 +83,12 @@ def _api_hunt(s, q, cfg, msg):
     :return:
     """
     logging.info('START')
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'MOTION_URL': msg['motion_url']}, {0: _ACTIONS['hunt'][0]})
-    puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['hunt'][1]})
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['hunt'][0]})
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['hunt'][1]})
     # REAL_RUN_TIME will go here
-    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id']},
                      {0: _ACTIONS['hunt'][2], 1: _ACTIONS['hunt'][3],
-                      2: _ACTIONS['hunt'][4], 3: _ACTIONS['hunt'][5],
-                      4: _ACTIONS['hunt'][6]})
+                      2: _ACTIONS['hunt'][4]})
     logging.info('COMPLETE')
     return True
 

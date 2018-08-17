@@ -43,14 +43,8 @@ _ACTIONS = {
         {0: {
             0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:received","log":"state=ready","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:starting","level":"INFO"}'},
-            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:download:starting","log":"downloading pulse data from <MOTION_URL>","level":"INFO"}'},
-            3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'progress', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"progress","version":1,"action_id":<ACTION_ID>,"progress":"hunt:download","current":0,"units":"bytes"}'}
         },
          1: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:download:completed","level":"INFO"}'},
-            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:homing:starting","level":"INFO"}'},
-        },
-         2: {
             0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:homing:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:deactivated","log":"ESTOP deactivated","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:idle:succeeded","level":"INFO"}'},
@@ -60,25 +54,23 @@ _ACTIONS = {
             6: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:running","level":"INFO"}'},
             7: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:starting:succeeded","level":"INFO"}'},
             8: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:running:starting","level":"INFO"}'},
-            9: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'progress', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"progress","version":1,"action_id":<ACTION_ID>,"progress":"hunt:progress","current":372,"units":"steps","total":<TOTAL_STEPS>}'},
+        },
+         2: {
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:running:succeeded","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:finished:starting","level":"INFO"}'},
         },
          3: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'progress', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"progress","version":1,"action_id":<ACTION_ID>,"progress":"hunt:progress","current":15874,"units":"steps","total":<TOTAL_STEPS>}'},
-            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:running:succeeded","level":"INFO"}'},
-            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:finished:starting","level":"INFO"}'},
-        },
-         4: {
             0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:finished:succeeded","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:resting:starting","level":"INFO"}'},
 
         },
-         5: {
+         4: {
             0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:reset","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":resting:succeeded","level":"INFO"}'},
             3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":idle:starting","level":"INFO"}'},
         },
-         6: {
+         5: {
             0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:activated","log":"ESTOP activated","level":"INFO"}'},
         }
         },
