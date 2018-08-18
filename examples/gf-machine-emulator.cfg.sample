@@ -1,5 +1,5 @@
 [GENERAL]
-base_dir: _RESOURCES
+base_dir: examples/_RESOURCES
 log_file: %(base_dir)s/LOG/emulator.log
 log_level: DEBUG
 

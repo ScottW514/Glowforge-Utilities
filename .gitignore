@@ -106,12 +106,13 @@ ENV/
 gf-machine-emulator.cfg
 
 # We can do without having anyone's FW, LOG or MOTION files
-_RESOURCES/FW/
-_RESOURCES/LOG/
-_RESOURCES/MOTION/
+examples/_RESOURCES/FW/
+examples/_RESOURCES/LOG/
+examples/_RESOURCES/MOTION/
 
 # Keep PyCharm users (ScottW, for one) from sharing their IDE settings with everyone.
 .idea/
 
-# Freely write scripts starting with "test" that won't be uploaded to Github
+# Freely write scripts starting with "test" or in the dev folder that won't be uploaded to Github
 test*
+dev/
