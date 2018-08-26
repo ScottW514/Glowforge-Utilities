@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Glowforge Utilities',
+    name='gfutilities',
+    description='Glowforge Utilities',
     author='Scott Wiederhold',
     author_email='s.e.wiederhold@gmail.com',
     url='https://github.com/ScottW514/Glowforge-Utilities',
-    version='0.5.14',
+    version='0.5.15',
     packages=find_packages(),
     license='MIT',
     long_description=open('README.txt').read(),

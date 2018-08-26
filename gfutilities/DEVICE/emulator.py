@@ -84,13 +84,14 @@ class Emulator:
                 self.q['rx'].task_done()
             time.sleep(.5)
 
-    def set_print_handler(self, handler):
+    def set_handler(self, name, handler):
         """
         Sets method to handle print calls.
+        :param name: {str} Name of Handler
         :param handler: {object} Print Handler Method
         :return:
         """
-        self.handlers['print'] = handler
+        self.handlers[name] = handler
 
     def _log_level(self, level_str):
         """

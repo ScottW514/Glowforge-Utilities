@@ -35,7 +35,7 @@ class Motion:
         """
         with open(mfile, 'rb') as f:
             f.seek(1)
-            if f.read(3) != 'GF1':
+            if f.read(3).decode('UTF-8') != 'GF1':
                 # This isn't a GF1 pulse file.
                 return False
             head_len = ord(f.read(1)) + (ord(f.read(1)) * 256)

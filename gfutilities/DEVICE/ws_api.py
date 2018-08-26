@@ -147,15 +147,28 @@ def _api_print(s, q, cfg, msg, handlers, **kwargs):
     puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['print'][1]})
 
-    if 'print' in handlers and handlers['print']:
-        handlers['print'](puls)
+    if 'print_download' in handlers and handlers['print_download']:
+        handlers['print_download'](puls)
+
+    if 'print_button' in handlers and handlers['print_button']:
+        handlers['print_button']()
 
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
                      {0: _ACTIONS['print'][2], 1: _ACTIONS['print'][3],
-                      2: _ACTIONS['print'][4], 3: _ACTIONS['print'][5],
-                      4: _ACTIONS['print'][6], 5: _ACTIONS['print'][7],
-                      6: _ACTIONS['print'][8], 7: _ACTIONS['print'][9],
-                      8: _ACTIONS['print'][10]})
+                      2: _ACTIONS['print'][4]})
+
+    if 'print_run' in handlers and handlers['print_run']:
+        handlers['print_run']()
+
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total},
+                     {0: _ACTIONS['print'][5], 1: _ACTIONS['print'][6],
+                      2: _ACTIONS['print'][7], 0: _ACTIONS['print'][8]})
+
+    if 'print_cooldown' in handlers and handlers['print_cooldown']:
+        handlers['print_cooldown']()
+
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id'], 'TOTAL_STEPS': puls.pulse_total}, {0: _ACTIONS['print'][9]})
+
     logging.info('COMPLETE')
     return True
 

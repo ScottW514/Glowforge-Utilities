@@ -52,7 +52,7 @@ _ACTIONS = {
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:starting","level":"INFO"}'},
         },
          1: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:homing:completed","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:homing:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:deactivated","log":"ESTOP deactivated","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:idle:succeeded","level":"INFO"}'},
             3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:warmup:starting","level":"INFO"}'},
@@ -67,18 +67,18 @@ _ACTIONS = {
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:finished:starting","level":"INFO"}'},
         },
          3: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:finished:succeeded","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:finished:succeeded","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:resting:starting","level":"INFO"}'},
 
         },
          4: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:completed","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"hunt:reset","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":resting:succeeded","level":"INFO"}'},
             3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":idle:starting","level":"INFO"}'},
         },
          5: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:activated","log":"ESTOP activated","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:activated","log":"ESTOP activated","level":"INFO"}'},
         }
         },
     'lid_image':
@@ -88,11 +88,11 @@ _ACTIONS = {
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:capture:starting","level":"INFO"}'},
         },
          1: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:capture:completed","log":"capture time: 1.47755","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:capture:completed","log":"capture time: 1.47755","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:upload:starting","level":"INFO"}'},
         },
          2: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:upload:completed","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:upload:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:completed","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lid_image:reset","level":"INFO"}'},
         }
@@ -104,7 +104,7 @@ _ACTIONS = {
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:download:starting","log":"downloading pulse data from <MOTION_URL>","level":"INFO"}'},
         },
          1: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:download:completed","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:download:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:deactivated","log":"ESTOP deactivated","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:idle:succeeded","level":"INFO"}'},
             3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:warmup:starting","level":"INFO"}'},
@@ -115,15 +115,15 @@ _ACTIONS = {
             8: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:running:starting","level":"INFO"}'},
         },
          2: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:running:succeeded","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:running:succeeded","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:finished:starting","level":"INFO"}'},
         },
          3: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:finished:succeeded","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:finished:succeeded","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:resting:starting","level":"INFO"}'},
         },
          4: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:completed","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"motion:reset","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":resting:succeeded","level":"INFO"}'},
             3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":idle:starting","level":"INFO"}'},
@@ -134,70 +134,68 @@ _ACTIONS = {
         },
     'head_image':
         {0: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:received","log":"state=ready","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:received","log":"state=ready","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:starting","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:capture:starting","level":"INFO"}'},
         },
          1: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:capture:completed","log":"capture time: 2.514","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:capture:completed","log":"capture time: 2.514","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:upload:starting","level":"INFO"}'},
         },
          2: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:upload:completed","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:upload:completed","level":"INFO"}'},
             1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:completed","level":"INFO"}'},
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:reset","level":"INFO"}'},
         }
         },
     'print':
         {0: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:received","log":"state=ready","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:starting","level":"INFO"}'},
-            2: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:download:starting","log":"downloading pulse data from <MOTION_URL>","level":"INFO"}'},
-            3: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'progress', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"progress","version":1,"action_id":<ACTION_ID>,"progress":"print:download","current":0,"units":"bytes"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:received","log":"state=ready","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:starting","level":"INFO"}'},
+            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:download:starting","log":"downloading pulse data from <MOTION_URL>","level":"INFO"}'},
+            3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'progress', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"progress","version":1,"action_id":<ACTION_ID>,"progress":"print:download","current":0,"units":"bytes"}'},
         },
          1: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:download:completed","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:waiting","log":"waiting for button press","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:download:completed","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:waiting","log":"waiting for button press","level":"INFO"}'},
         },
          2: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"button:pressed","log":"button pressed","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:idle:succeeded","level":"INFO"}'},
-            2: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:warmup:starting","level":"INFO"}'},
-            3: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:warmup:succeeded","level":"INFO"}'},
-            4: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:starting:starting","level":"INFO"}'},
-            5: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:running","level":"INFO"}'},
-            6: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:starting:succeeded","level":"INFO"}'},
-            7: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:running:starting","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"button:pressed","log":"button pressed","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:idle:succeeded","level":"INFO"}'},
+            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:warmup:starting","level":"INFO"}'},
+            3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:warmup:succeeded","level":"INFO"}'},
+            4: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:starting:starting","level":"INFO"}'},
+            5: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:running","level":"INFO"}'},
+            6: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:starting:succeeded","level":"INFO"}'},
+            7: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:running:starting","level":"INFO"}'},
         },
          3: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:deactivated","log":"ESTOP deactivated","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:deactivated","log":"ESTOP deactivated","level":"INFO"}'},
         },
          4: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"button:released","log":"button released","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"button:released","log":"button released","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:running:succeeded","level":"INFO"}'},
         },
          5: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:running:succeeded","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:finished:starting","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:finished:starting","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:finished:succeeded","level":"INFO"}'},
+            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:return_to_home:starting","level":"INFO"}'},
         },
          6: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:finished:succeeded","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:return_to_home:starting","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:return_to_home:succeeded","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:resting:starting","level":"INFO"}'},
         },
          7: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:return_to_home:succeeded","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:resting:starting","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:resting","level":"INFO"}'},
         },
          8: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:resting","level":"INFO"}'},
-        },
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:activated","log":"ESTOP activated","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:completed","level":"INFO"}'},
+            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:reset","level":"INFO"}'},
+            3: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":resting:succeeded","level":"INFO"}'},
+         },
          9: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":"estop:activated","log":"ESTOP activated","level":"INFO"}'},
-        },
-        10: {
-            0: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:completed","level":"INFO"}'},
-            1: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:reset","level":"INFO"}'},
-            2: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":resting:succeeded","level":"INFO"}'},
-            3: {'delay': .5, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":idle:starting","level":"INFO"}'},
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"event":":idle:starting","level":"INFO"}'},
         },
         },
 }
