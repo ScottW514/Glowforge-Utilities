@@ -35,7 +35,7 @@ def get_session(cfg):
     :return: {Session} Requests Session object
     """
     s = requests.Session()
-    cfg['SESSION.USER_AGENT'] = 'Glowforge/%s' % cfg['MACHINE.FIRMWARE']
+    cfg['SESSION.USER_AGENT'] = 'OpenGlow/%s' % cfg['MACHINE.FIRMWARE']
     s.headers.update({'user-agent': cfg['SESSION.USER_AGENT']})
     logging.debug('Returning object : %s' % s)
     return s

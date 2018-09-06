@@ -111,6 +111,28 @@ def _api_lid_image(s, q, cfg, msg, **kwargs):
     return True
 
 
+def _api_lidar_image(s, q, cfg, msg, **kwargs):
+    """
+    Uploads head image.
+    Sends either the laser on or laser off image, selected for the proper thickness.
+    TODO: This is a quick and ugly hack to adjust for a recent change in the scanning process by the cloud app.
+    :param s: {Session} Requests Session object
+    :param q: {Queue} WSS message queue
+    :param cfg: {dict} Emulator's configuration dictionary
+    :param msg: {dict} WSS Message
+    :return:
+    """
+    logging.info('START')
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['lidar_image'][0], 1: _ACTIONS['lidar_image'][1]})
+    img = 'HEAD_LASER_%s.jpg' % cfg['MATERIAL.THICKNESS']
+    web_api.run_cmd('img_upload', s=s, cfg=cfg, img=img, msg={'action_type': 'head_image', 'id': msg['id']})
+    img = 'HEAD_NO_LASER_%s.jpg' % cfg['MATERIAL.THICKNESS']
+    web_api.run_cmd('img_upload', s=s, cfg=cfg, img=img, msg={'action_type': 'head_image', 'id': msg['id']})
+    _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['lidar_image'][2]})
+    logging.info('COMPLETE')
+    return True
+
+
 def _api_motion(s, q, cfg, msg, **kwargs):
     """
     Executes motion commands (not printing)

@@ -148,6 +148,22 @@ _ACTIONS = {
             2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"head_image:reset","level":"INFO"}'},
         }
         },
+    'lidar_image':
+        {0: {
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:received","log":"state=ready","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:starting","level":"INFO"}'},
+            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:capture:starting","level":"INFO"}'},
+        },
+         1: {
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:capture:completed","log":"capture time: 2.514","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:upload:starting","level":"INFO"}'},
+        },
+         2: {
+            0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:upload:completed","level":"INFO"}'},
+            1: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:completed","level":"INFO"}'},
+            2: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"lidar_image:reset","level":"INFO"}'},
+        }
+        },
     'print':
         {0: {
             0: {'delay': 0, 'act': True, 'api': 'ws', 'run': 'event', 'msg': '{"id":<ID>,"timestamp":<TIMESTAMP>,"type":"event","version":1,"action_id":<ACTION_ID>,"event":"print:received","log":"state=ready","level":"INFO"}'},
