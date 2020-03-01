@@ -1,13 +1,11 @@
 """
-(C) Copyright 2018
+(C) Copyright 2020
 Scott Wiederhold, s.e.wiederhold@gmail.com
 https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
-
-TODO: Error checking/handling of some kind
 """
-from . import _REPORTED_SETTINGS, _MOTION_SETTINGS
+from . import _REPORTED_SETTINGS
 import time
 
 
@@ -38,11 +36,3 @@ def report(cfg):
         settings += '"%s":%s,' % (item, value)
     return '{%s}' % settings[:-1]
 
-
-def decode_motion(header):
-    settings = {}
-    for item in header:
-        if item in _MOTION_SETTINGS:
-            if _MOTION_SETTINGS[item] is not None:
-                settings[_MOTION_SETTINGS[item]] = header[item]
-    return settings
