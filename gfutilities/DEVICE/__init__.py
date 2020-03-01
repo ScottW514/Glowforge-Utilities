@@ -1,5 +1,5 @@
 """
-(C) Copyright 2018
+(C) Copyright 2020
 Scott Wiederhold, s.e.wiederhold@gmail.com
 https://community.openglow.org
 
@@ -10,7 +10,7 @@ __all__ = ['actions', 'authentication', 'configuration', 'connection', 'emulator
 """
 _ACTIONS {dict} holds the sequence of MACHINE responses/actions for each action commanded by the SERVICE
     Actions organized by name, group number, and finally action number. Typically, all actions in a group are processed
-    together.  Groups may be ran individually, or as a batch in sequential order - determinied by the function running
+    together.  Groups may be ran individually, or as a batch in sequential order - determined by the function running
     them.
     api_function_name{str}: The name of the api function these actions belong to.
         {dict}

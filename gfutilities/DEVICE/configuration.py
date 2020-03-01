@@ -1,16 +1,11 @@
 """
-(C) Copyright 2018
+(C) Copyright 2020
 Scott Wiederhold, s.e.wiederhold@gmail.com
 https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
-
-TODO: Error checking/handling of some kind
 """
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
+import configparser
 
 
 def parse(cfg_file):
@@ -25,7 +20,7 @@ def parse(cfg_file):
         'console_log_level': 'False',
     }
     cfg = {}
-    config = configparser.SafeConfigParser(defaults)
+    config = configparser.ConfigParser(defaults)
     config.read(cfg_file)
     for section in config.sections():
         for item in config.items(section):
