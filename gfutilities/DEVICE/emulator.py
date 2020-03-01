@@ -1,19 +1,13 @@
 """
-(C) Copyright 2018
+(C) Copyright 2020
 Scott Wiederhold, s.e.wiederhold@gmail.com
 https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
-
-TODO: Error checking/handling of some kind
 """
 from . import actions, configuration, connection, websocket, _STATES
 from .authentication import authenticate_machine
-
-try:
-    import Queue as queue
-except ImportError:
-    import queue
+import queue
 
 import json
 import time
