@@ -1,11 +1,9 @@
 """
-(C) Copyright 2018
+(C) Copyright 2020
 Scott Wiederhold, s.e.wiederhold@gmail.com
 https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
-
-TODO: Error checking/handling of some kind
 """
 from . import web_api, _ACTIONS, _STATES
 import time
@@ -74,6 +72,7 @@ def _api_hunt(s, q, cfg, msg, **kwargs):
     logging.info('START')
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['hunt'][0]})
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id']}, {0: _ACTIONS['hunt'][1]})
+    puls = web_api.run_cmd('motion_download', s=s, cfg=cfg, msg=msg)
     # REAL_RUN_TIME will go here
     _process_actions(s, q, cfg, {'ACTION_ID': msg['id']},
                      {0: _ACTIONS['hunt'][2], 1: _ACTIONS['hunt'][3],
