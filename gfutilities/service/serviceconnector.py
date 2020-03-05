@@ -95,14 +95,13 @@ class ServiceConnector:
         self.machine.stop()
 
     @staticmethod
-    def _log_level(level_str: str) -> \
-            Union[logging.CRITICAL, logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG]:
+    def _log_level(level_str: str) -> int:
         """
         Returns logging log level object based on provided string.
         :param level_str: Desired logging level
         :type level_str: str
         :return: Logging level object
-        :rtype: Union[logging.CRITICAL, logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG]
+        :rtype: int
         """
         levels = {
             'CRITICAL': logging.CRITICAL, 'ERROR': logging.ERROR, 'WARNING': logging.WARNING, 'INFO': logging.INFO,
