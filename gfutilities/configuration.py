@@ -5,21 +5,23 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+from typing import Any
 import configparser
 
+_CONFIG = {}
 
-def parse(cfg_file):
+
+def parse(cfg_file: str) -> None:
     """
     Parses configuration file and returns dict object with values as: <SECTION>.<PARAM>: value.
     Note: SECTION and PARAM are converted to uppercase.
-    :param cfg_file: {str} path to configuration file
-    :return: {dict} Configuration parameter values
+    :param cfg_file: path to configuration file
+    :type cfg_file: str
     """
     defaults = {
         'log_level': 'DEBUG',
         'console_log_level': 'False',
     }
-    cfg = {}
     config = configparser.ConfigParser(defaults)
     config.read(cfg_file)
     for section in config.sections():
@@ -30,5 +32,26 @@ def parse(cfg_file):
                 value = False
             else:
                 value = item[1]
-            cfg['%s.%s' % (str.upper(section), str.upper(item[0]))] = value
-    return cfg
+            _CONFIG['%s.%s' % (str.upper(section), str.upper(item[0]))] = value
+
+
+def get_cfg(parameter: str) -> Any:
+    """
+    Returns value of configuration parameter
+    :param parameter: Parameter to return
+    :type parameter: str
+    :return: The value of the parameter
+    :rtype: Any
+    """
+    return _CONFIG.get(parameter)
+
+
+def set_cfg(parameter: str, value: Any):
+    """
+    Returns value of configuration parameter
+    :param parameter: Parameter to set
+    :type parameter: str
+    :param value: Value of parameter
+    :type value: Any
+    """
+    _CONFIG[parameter] = value

@@ -31,7 +31,6 @@ firmware: 1.11.3-7
 app_version: 991aef8977eedb6b3a6e426eff34b7d2ee78a3f4
 head_firmware: 199234110
 
-
 [MATERIAL]
 thickness: .230
 

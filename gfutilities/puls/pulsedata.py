@@ -7,25 +7,27 @@ SPDX-License-Identifier:    MIT
 """
 
 
-class Motion:
+class PulseData:
     def __init__(self, mfile):
         """
-        Initial Class
-        :param mfile: Motion file to load
+        Initialize Class
+        :param mfile: PulseData file to load
         """
-        self.raw_pulse = ''
-        self.header = {}
+        self.raw_pulse: bytes = b''
+        self.header: dict = {}
         self._load_file(mfile)
-        self.pulse_total = len(self.raw_pulse)
-        self.pulse_current = 1
-        self.position_current = {'X': 0, 'Y': 0, 'Z': 0}
-        self.source_file = mfile
+        self.pulse_total: int = len(self.raw_pulse)
+        self.pulse_current: int = 1
+        self.position_current: dict = {'X': 0, 'Y': 0, 'Z': 0}
+        self.source_file: str = mfile
 
-    def _load_file(self, mfile):
+    def _load_file(self, mfile: str) -> bool:
         """
         Loads motion file
-        :param mfile: Motion file to load
-        :return:
+        :param mfile: path to PulseData file to load
+        :type mfile: str
+        :return: Status of load
+        :rtype: bool
         """
         with open(mfile, 'rb') as f:
             f.seek(1)

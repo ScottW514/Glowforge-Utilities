@@ -6,8 +6,10 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
-from gfutilities.DEVICE.emulator import Emulator
+from gfutilities import ServiceConnector, Emulator
 
-gf = Emulator('examples/gf-machine-emulator.cfg')
-gf.connect()
-gf.run()
+machine = Emulator()
+
+service = ServiceConnector('gf-machine-emulator.cfg', machine)
+service.connect()
+service.run()
