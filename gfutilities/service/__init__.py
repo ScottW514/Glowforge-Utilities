@@ -5,5 +5,3 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
-from . serviceconnector import ServiceConnector
-__all__ = ['ServiceConnector']

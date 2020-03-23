@@ -5,11 +5,17 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+import logging
 from queue import Queue
 from requests import Session
-from .motion import Motion
-from .capture import Capture
-from ..service.websocket import send_wss_event
+from threading import Thread
+from typing import Union
+
+from gfutilities._common import *
+from gfutilities.device.settings import send_report
+from gfutilities.service.websocket import send_wss_event
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class BaseMachine:
@@ -22,280 +28,279 @@ class BaseMachine:
         """
         Initializes the object, child threads and message queues.
         """
-        self.motion_q: Queue = Queue()
-        self.capture_q: Queue = Queue()
-        self.motion_thread: Motion = Motion(self)
-        self.capture_thread: Capture = Capture(self)
+        self._action_thread: _ActionThread = _ActionThread(self, {})
+        self._q_msg_tx: Union[Queue, None] = None
+        self.running_action_id: Union[int, None] = 0
+        self._running_action_cancelled: bool = False
+        self._session: Session = Union[Queue, None]
 
-    def _button_wait(self, s: Session, q: Queue, msg: dict) -> None:
+    def _ok_to_run_action(self, action_id: str, msg_type: str, status: str) -> bool:
+        """
+        Checks the action against any current running actions.
+        If this a request to cancel an action:
+            - If the action is currently running, it sets the _running_action_cancelled flag as True
+            - If the action is not currently running, it sends a cancelled message to the service.
+            - For both conditions, it returns False
+        If there are not any currently running actions, it sets this as the current running action and returns True.
+        If there is a current running action, and this is not a request to cancel it, sends a cancelled message
+        to the service for this requested action, and returns false.
+        :param action_id: Action ID
+        :type action_id: dict
+        :param status: Status of message (either 'ready' or 'cancelled')
+        :type status: dict
+        :return: Return True if this it is ok to run this action, False if not
+        :rtype: bool
+        """
+        action_id = int(action_id)
+        if action_id == self.running_action_id and status == 'cancelled':
+            logger.debug('action %s cancellation received' % action_id)
+            self._running_action_cancelled = True
+            return False
+        elif self.running_action_id:
+            self._send_cancelled_message(action_id, msg_type)
+            return False
+        else:
+            logger.debug('running action set to %s' % action_id)
+            self.running_action_id = action_id
+            self._running_action_cancelled = False
+            return True
+
+    def _button_wait(self, msg: dict) -> None:
         """
         Child class handler for "print:waiting" event - waiting for button push
         To be implemented by the child class.
         This is method should return after the big button has been pressed.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        pass
+        raise NotImplementedError
 
-    def head_image(self, s: Session, q: Queue, msg: dict) -> None:
+    def head_image(self, msg: dict) -> None:
         """
         Process head image request.
         Sends related start and finish messages, and calls child class handler.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(q, msg, 'head_image:starting')
-        self._head_image(s, q, msg)
-        send_wss_event(q, msg, 'head_image:completed')
+        send_wss_event(self._q_msg_tx, msg['id'], 'head_image:starting')
+        self._head_image(msg)
+        send_wss_event(self._q_msg_tx, msg['id'], 'head_image:completed')
 
-    def _head_image(self, s: Session, q: Queue, msg: dict, settings: dict = None) -> None:
+    def _head_image(self, msg: dict, settings: dict = None) -> None:
         """
         Child class handler for capturing image from head cam.
         To be implemented by the child class.
         This method should capture the image from the head camera, and upload the resulting image to the Web API.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
+        :param settings: Camera settings
+        :type settings: dict
         :return:
         """
-        pass
+        raise NotImplementedError
 
-    def hunt(self, s: Session, q: Queue, msg: dict) -> None:
+    def hunt(self, msg: dict) -> None:
         """
         Home the focus lens.
         Sends related start and finish messages, and calls child class handler.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(q, msg, 'hunt:starting')
-        self._hunt(s, q, msg)
-        send_wss_event(q, msg, 'hunt:completed')
+        send_wss_event(self._q_msg_tx, msg['id'], 'hunt:starting')
+        self._hunt(msg)
+        send_wss_event(self._q_msg_tx, msg['id'], 'hunt:completed')
 
-    def _hunt(self, s: Session, q: Queue, msg: dict) -> None:
+    def _hunt(self, msg: dict) -> None:
         """
         Child class handler for focus lens homing cycle
         To be implemented by the child class.
         This method should home the lens and set it to the appropriate zeroing offset.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        pass
+        raise NotImplementedError
 
-    def lid_image(self, s: Session, q: Queue, msg: dict) -> None:
+    def _initialize(self) -> None:
+        """
+        Child class handler for initializing the machine
+        To be implemented by the child class.
+        :return:
+        """
+        raise NotImplementedError
+
+    def lid_image(self, msg: dict) -> None:
         """
         Process lid image request.
         Sends related start and finish messages, and calls child class handler.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(q, msg, 'lid_image:starting')
-        self._lid_image(s, q, msg)
-        send_wss_event(q, msg, 'lid_image:completed')
+        send_wss_event(self._q_msg_tx, msg['id'], 'lid_image:starting')
+        self._lid_image(msg)
+        send_wss_event(self._q_msg_tx, msg['id'], 'lid_image:completed')
 
-    def _lid_image(self, s: Session, q: Queue, msg: dict) -> None:
+    def _lid_image(self, msg: dict) -> None:
         """
         Child class handler for lid image requests.
         To be implemented by the child class.
         This method should capture the image from the lid camera, and upload the resulting image to the Web API.
-       :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        pass
+        raise NotImplementedError
 
-    def lidar_image(self, s: Session, q: Queue, msg: dict) -> None:
+    def lidar_image(self, msg: dict) -> None:
         """
         Process lidar image request.
         Sends related start and finish messages, and calls child class handler to capture
         head images with and without the distance measuring laser enabled.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(q, msg, 'lidar_image:starting')
-        self._head_image(s, q, msg, msg['settings'][0])
-        self._head_image(s, q, msg, msg['settings'][1])
-        send_wss_event(q, msg, 'lidar_image:completed')
+        send_wss_event(self._q_msg_tx, msg['id'], 'lidar_image:starting')
+        self._head_image(msg, msg['settings'][0])
+        send_wss_event(self._q_msg_tx, msg['id'], 'lidar_image:completed')
 
-    def motion(self, s: Session, q: Queue, msg: dict) -> None:
+    def motion(self, msg: dict) -> None:
         """
         Process motion request.
         Sends related start and finish messages, and calls child class handler.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(q, msg, 'motion:starting')
-        self._motion(s, q, msg)
-        send_wss_event(q, msg, 'motion:completed')
+        send_wss_event(self._q_msg_tx, msg['id'], msg['action_type'] + ':starting')
+        self._motion(msg)
+        if self._running_action_cancelled:
+            self._send_cancelled_message(msg['id'], msg['action_type'])
+        else:
+            send_wss_event(self._q_msg_tx, msg['id'], msg['action_type'] + ':completed')
 
-    def _motion(self, s: Session, q: Queue, msg: dict) -> None:
+    def _motion(self, msg: dict) -> None:
         """
         Child class handler for motion requests.
         To be implemented by the child class.
         This method should download the specified motion file and execute it.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        pass
+        raise NotImplementedError
 
-    def print(self, s: Session, q: Queue, msg: dict) -> None:
+    def run_capture(self, msg: dict) -> None:
         """
-        Process print request.
-        Sends related start and finish messages, and calls child class handlers.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
+        Process capture request.
+        Fires up CaptureThread thread to handle image request.
+        Interface for GFUI Service
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(q, msg, 'print:starting')
-        self._print_download(s, q, msg)
-        send_wss_event(q, msg, 'print:download:completed')
-        self._button_wait(s, q, msg)
-        send_wss_event(q, msg, 'print:warmup:starting')
-        self._print_warmup(s, q, msg)
-        send_wss_event(q, msg, 'print:running')
-        self._print(s, q, msg)
-        self._print_return_home(s, q, msg)
-        self._print_cooldown(s, q, msg)
-        send_wss_event(q, msg, 'print:completed')
+        if self._ok_to_run_action(msg['id'], msg['action_type'], msg['status']):
+            if not self._action_thread.is_alive():
+                self._action_thread = _ActionThread(self, msg)
+                self._action_thread.start()
 
-    def _print(self, s: Session, q: Queue, msg: dict) -> None:
+    def run_puls(self, msg: dict) -> None:
         """
-        Child class handler for print requests.
+        Process pulse file.
+        Fires up MotionThread thread to handle puls file request.
+        Interface for GFUI Service
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        if self._ok_to_run_action(msg['id'], msg['action_type'], msg['status']):
+            if not self._action_thread.is_alive():
+                self._action_thread = _ActionThread(self, msg)
+                self._action_thread.start()
+
+    def run_settings_report(self, msg: dict) -> None:
+        """
+        Send settings report.
+        Interface for GFUI Service
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        if self._ok_to_run_action(msg['id'], msg['action_type'], msg['status']):
+            send_report(self._q_msg_tx, msg)
+        self.running_action_id = None
+
+    def _shutdown(self) -> None:
+        """
+        Child class handler for shutting down the machine
         To be implemented by the child class.
-        This method executes the print job loaded into the SDMA buffer.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
-        :param msg: Incoming WSS Message
-        :type msg: dict
         :return:
         """
-        pass
+        raise NotImplementedError
 
-    def _print_cooldown(self, s: Session, q: Queue, msg: dict) -> None:
-        """
-        Child class handler for print requests.
-        To be implemented by the child class.
-        This method should spin the fans for period of time after the job has completed.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
-        :param msg: Incoming WSS Message
-        :type msg: dict
-        :return:
-        """
-        pass
+    def _send_cancelled_message(self, action_id: int, action_type: str):
+        send_wss_event(self._q_msg_tx, action_id, '%s:cancelled' % action_type)
 
-    def _print_download(self, s: Session, q: Queue, msg: dict) -> None:
+    def start(self, session: Session, msq_tx_q: Queue) -> None:
         """
-        Child class handler for downloading motion files for print operations.
-        To be implemented by the child class.
-        This method should download the specified motion file and feed it into the SDMA buffer.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
-        :param msg: Incoming WSS Message
-        :type msg: dict
+        Initialize Machine and Start message handling threads.
+        :param session: WSS Session
+        :type session: Session
+        :param msq_tx_q: WSS Msg Tx Queue
+        :type msq_tx_q: Queue
         :return:
         """
-        pass
-
-    def _print_return_home(self, s: Session, q: Queue, msg: dict) -> None:
-        """
-        Child class handler for print requests.
-        To be implemented by the child class.
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
-        :param msg: Incoming WSS Message
-        :type msg: dict
-        :return:
-        """
-        pass
-
-    def _print_warmup(self, s: Session, q: Queue, msg: dict) -> None:
-        """
-        Child class handler for system warmup.
-        To be implemented by the child class.
-        This method should prepare the system for a print job (i.e. spinning up the fans, etc.)
-        :param s: Web API Session
-        :type s: Session
-        :param q: WSS Transmit Queue
-        :type q: Queue
-        :param msg: Incoming WSS Message
-        :type msg: dict
-        :return:
-        """
-        pass
-
-    def start(self) -> None:
-        """
-        Start message handling threads.
-        :return:
-        """
-        self.motion_thread.start()
-        self.capture_thread.start()
+        logger.debug('starting')
+        self._session = session
+        self._q_msg_tx = msq_tx_q
+        self._initialize()
+        logger.debug('started')
 
     def stop(self) -> None:
         """
         Stop message handling threads.
         :return:
         """
-        self.motion_thread.stop = True
-        self.capture_thread.stop = True
-        self.motion_thread.join()
-        self.capture_thread.join()
+        logger.debug('stopping')
+        self._shutdown()
+        logger.debug('stopped')
+
+
+class _ActionThread(Thread):
+    """
+    ActionThread
+    Responds to incoming WSS events to run an action
+    """
+    def __init__(self, machine: BaseMachine, msg: dict):
+        """
+        Initialize ActionThread Dispatcher
+        :param machine: Machine object
+        :type machine: BaseMachine
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        """
+        self._machine = machine
+        self._msg = msg
+        Thread.__init__(self)
+
+    def run(self) -> None:
+        logger.debug('action thread start')
+        if self._msg['action_type'] == 'lid_image':
+            self._machine.lid_image(self._msg)
+        elif self._msg['action_type'] == 'head_image':
+            self._machine.head_image(self._msg)
+        elif self._msg['action_type'] == 'lidar_image':
+            self._machine.lidar_image(self._msg)
+        elif self._msg['action_type'] == 'hunt':
+            self._machine.hunt(self._msg)
+        elif self._msg['action_type'] in ['motion', 'print']:
+            self._machine.motion(self._msg)
+        self._machine.running_action_id = None
+        logger.debug('action thread stop')
+
+
+__all__ = ['BaseMachine']

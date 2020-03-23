@@ -7,8 +7,12 @@ SPDX-License-Identifier:    MIT
 """
 import logging
 from requests import Session
-from .websocket import request, update_header
-from ..configuration import get_cfg, set_cfg
+
+from gfutilities._common import *
+from gfutilities.configuration import get_cfg, set_cfg
+from gfutilities.service.websocket import request, update_header
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def authenticate_machine(s: Session) -> bool:
@@ -23,18 +27,18 @@ def authenticate_machine(s: Session) -> bool:
     :return: Authentication result.
     :rtype: bool
     """
-    logging.info('START')
+    logger.info('START')
     r = request(s, get_cfg('SERVICE.SERVER_URL') + '/machines/sign_in', 'POST',
                 data={'serial': 'S' + str(get_cfg('MACHINE.SERIAL')), 'password': get_cfg('MACHINE.PASSWORD')})
     if r:
         rj = r.json()
-        logging.debug(rj)
+        logger.debug(rj)
         set_cfg('SESSION.WS_TOKEN', rj['ws_token'])
         set_cfg('SESSION.AUTH_TOKEN', rj['auth_token'])
         update_header(s, 'Authorization', "Bearer %s" % get_cfg('SESSION.AUTH_TOKEN'))
-        logging.info('SUCCESS')
+        logger.info('SUCCESS')
         return True
     else:
-        logging.error('FAILED')
+        logger.error('FAILED')
         return False
 

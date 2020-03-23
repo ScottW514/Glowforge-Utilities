@@ -5,5 +5,6 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
-from .pulsedata import PulseData
-__all__ = ['PulseData']
+from gfutilities.puls.pulsedata import decode_all_steps
+
+__all__ = ['decode_all_steps']

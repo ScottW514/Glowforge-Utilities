@@ -5,14 +5,16 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+import json
 import logging
 import time
-from requests import Session
-from queue import Queue
-from .basemachine import BaseMachine
-from ..puls import PulseData
-from ..configuration import get_cfg
-from ..service.websocket import download_file, img_upload
+
+from gfutilities._common import *
+from gfutilities.configuration import get_cfg
+from gfutilities.device.basemachine import BaseMachine
+from gfutilities.service.websocket import load_motion, img_upload, send_wss_event
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class Emulator(BaseMachine):
@@ -35,65 +37,69 @@ class Emulator(BaseMachine):
         # HOME_4.jpg: Image after third retreat move
         # LID_IMAGE.jpg: Image of bed with Proofgrade(tm) material
         #                This image is sent for every none-homing lid_image request
-        self._homing_stage = 0 if get_cfg('MACHINE.BYPASS_HOMING') else 1
+        self._homing_stage = 0 if get_cfg('EMULATOR.BYPASS_HOMING') else 1
         # Used to track the action just before a lid_image request. This is used to detect homing operations after
         # the initial start up (after a print job, for instance)
         self._last_action = None
 
-    def _button_wait(self, s: Session, q: Queue, msg: dict) -> None:
+    def _button_wait(self, msg: dict) -> None:
         pass
 
-    def _head_image(self, s: Session, q: Queue, msg: dict, settings: dict = None) -> None:
+    def _head_image(self, msg: dict, settings: dict = None) -> None:
         if settings is not None and settings.get('HCil') > 0:
-            img = 'HEAD_LASER_%s.jpg' % get_cfg('MATERIAL.THICKNESS')
+            img = 'HEAD_LASER_%s.jpg' % get_cfg('EMULATOR.MATERIAL_THICKNESS')
         else:
-            img = 'HEAD_NO_LASER_%s.jpg' % get_cfg('MATERIAL.THICKNESS')
-        with open('%s/%s' % (get_cfg('GENERAL.IMAGE_DIR'), img), 'rb') as f:
-            img_upload(s, f.read(), msg)
+            img = 'HEAD_NO_LASER_%s.jpg' % get_cfg('EMULATOR.MATERIAL_THICKNESS')
+        with open('%s/%s' % (get_cfg('EMULATOR.IMAGE_SRC_DIR'), img), 'rb') as f:
+            img_upload(self._session, f.read(), msg)
         self._last_action = 'head_image'
 
-    def _hunt(self, s: Session, q: Queue, msg: dict) -> None:
+    def _hunt(self, msg: dict) -> None:
         self._last_action = 'hunt'
-        self._motion_download(s, msg)
+        self._motion_download(msg)
 
-    def _lid_image(self, s: Session, q: Queue, msg: dict) -> None:
+    def _initialize(self) -> None:
+        pass
+
+    def _lid_image(self, msg: dict) -> None:
         if self._homing_stage == 0 and self._last_action == 'motion':
             # Looks like were are homing again
             self._homing_stage = 1
         if self._homing_stage != 0:
-            logging.info('HOME Step %s' % self._homing_stage)
+            logger.info('HOME Step %s' % self._homing_stage)
             img = 'HOME_%s.jpg' % self._homing_stage
             self._homing_stage = self._homing_stage + 1 if self._homing_stage < 4 else 0
         else:
             img = 'LID_IMAGE.jpg'
-        with open('%s/%s' % (get_cfg('GENERAL.IMAGE_DIR'), img), 'rb') as f:
-            img_upload(s, f.read(), msg)
+        with open('%s/%s' % (get_cfg('EMULATOR.IMAGE_SRC_DIR'), img), 'rb') as f:
+            img_upload(self._session, f.read(), msg)
         self._last_action = 'lid_image'
 
-    def _motion(self, s: Session, q: Queue, msg: dict) -> None:
-        self._motion_download(s, msg)
-        self._last_action = 'motion'
+    def _motion(self, msg: dict) -> None:
+        # Download puls file from service
+        self._motion_download(msg)
+        if msg['action_type'] == 'print':
+            send_wss_event(self._q_msg_tx, msg['id'], 'print:download:completed')
+            self._button_wait(msg)
+            if not self._running_action_cancelled:
+                send_wss_event(self._q_msg_tx, msg['id'], 'print:warmup:starting')
+        # Run motion job
+        if not self._running_action_cancelled:
+            if msg['action_type'] == 'print':
+                send_wss_event(self._q_msg_tx, msg['id'], 'print:running')
 
-    def _motion_download(self, s: Session, msg: dict) -> PulseData:
-        logging.info('DOWNLOADING')
-        file_name = '%s/%s_%s.puls' % (get_cfg('GENERAL.MOTION_DIR'),
+        self._last_action = msg['action_type']
+
+    def _motion_download(self, msg: dict):
+        logger.info('DOWNLOADING')
+        base_file_name = '%s/%s_%s' % (get_cfg('EMULATOR.MOTION_DL_DIR'),
                                        time.strftime("%Y-%m-%d_%H%M%S"), msg['action_type'])
-        download_file(s, msg['motion_url'], file_name)
-        logging.info('COMPLETE')
-        return PulseData(file_name)
+        info = load_motion(self._session, msg['motion_url'], base_file_name + '.puls')
+        with open(base_file_name + '.info', 'w') as f:
+            f.write(json.dumps(info, sort_keys=True, indent=4, default=str) + '\n')
+        logger.debug('Header: %s' % info)
+        logger.info('COMPLETE')
+        return
 
-    def _print(self, s: Session, q: Queue, msg: dict) -> None:
-        self._last_action = 'print'
-        pass
-
-    def _print_cooldown(self, s: Session, q: Queue, msg: dict) -> None:
-        pass
-
-    def _print_download(self, s: Session, q: Queue, msg: dict) -> None:
-        self._motion_download(s, msg)
-
-    def _print_return_home(self, s: Session, q: Queue, msg: dict) -> None:
-        pass
-
-    def _print_warmup(self, s: Session, q: Queue, msg: dict) -> None:
+    def _shutdown(self) -> None:
         pass

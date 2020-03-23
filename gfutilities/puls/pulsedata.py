@@ -5,44 +5,58 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+_decode_step_codes = {
+    'LE': {'mask': 0b00010000, 'test': 0b00010000},  # Laser Enable (ON)
+    'LP': {'mask': 0b10000000, 'test': 0b01111111},  # Laser Power Setting
+    'XP': {'mask': 0b00000011, 'test': 0b00000001},  # X+ Step
+    'XN': {'mask': 0b00000011, 'test': 0b00000011},  # X- Step
+    'YN': {'mask': 0b00001100, 'test': 0b00000100},  # Y- Step
+    'YP': {'mask': 0b00001100, 'test': 0b00001100},  # Y+ Step
+    'ZP': {'mask': 0b01100000, 'test': 0b00100000},  # Z+ Step
+    'ZN': {'mask': 0b01100000, 'test': 0b01100000},  # Z- Step
+}
+
+_SPEED = 1000
 
 
-class PulseData:
-    def __init__(self, mfile):
-        """
-        Initialize Class
-        :param mfile: PulseData file to load
-        """
-        self.raw_pulse: bytes = b''
-        self.header: dict = {}
-        self._load_file(mfile)
-        self.pulse_total: int = len(self.raw_pulse)
-        self.pulse_current: int = 1
-        self.position_current: dict = {'X': 0, 'Y': 0, 'Z': 0}
-        self.source_file: str = mfile
+def decode_all_steps(puls: bytes, data: dict = None, mode: tuple = (8, 2)) -> dict:
+    cnt = {
+        'XP': 0,
+        'XN': 0,
+        'XTOT': 0,
+        'XEND': 0,
+        'YP': 0,
+        'YN': 0,
+        'YTOT': 0,
+        'YEND': 0,
+        'ZP': 0,
+        'ZN': 0,
+        'ZTOT': 0,
+        'ZEND': 0,
+        'LE': 0,
+        'LP': 0,
+    }
+    for step in puls:
+        if step & _decode_step_codes['LP']['mask']:
+            # Power Setting (LP)
+            cnt['LP'] = cnt['LP'] + 1
+        else:
+            for action in sorted(_decode_step_codes):
+                if not (step & _decode_step_codes[action]['mask']) ^ _decode_step_codes[action]['test']:
+                    cnt[action] = cnt[action] + 1
+                    if action != 'LE':
+                        cnt[action[0:1] + 'TOT'] = cnt[action[0:1] + 'TOT'] + 1
+                        cnt[action[0:1] + 'END'] = cnt[action[0:1] + 'END'] + 1 \
+                            if action[1:2] == 'P' else cnt[action[0:1] + 'END'] - 1
 
-    def _load_file(self, mfile: str) -> bool:
-        """
-        Loads motion file
-        :param mfile: path to PulseData file to load
-        :type mfile: str
-        :return: Status of load
-        :rtype: bool
-        """
-        with open(mfile, 'rb') as f:
-            f.seek(1)
-            if f.read(3).decode('UTF-8') != 'GF1':
-                # This isn't a GF1 pulse file.
-                return False
-            head_len = ord(f.read(1)) + (ord(f.read(1)) * 256)
-            f.read(2)
-            raw_header = f.read(head_len - 8)
-            s = 0
-            while s < len(raw_header):
-                self.header[raw_header[s:s + 4].decode()] = ord(raw_header[s + 4:s + 5]) + \
-                                                    (ord(raw_header[s + 5:s + 6]) * 0x100) + \
-                                                    (ord(raw_header[s + 6:s + 7]) * 0x10000) + \
-                                                    (ord(raw_header[s + 7:s + 8]) * 0x1000000)
-                s += 8
-            self.raw_pulse = f.read()
-        return True
+    for axis in ('X', 'Y'):
+        cnt[axis + 'MM'] = (cnt[axis + 'END'] / mode[0]) * 0.15
+    cnt['ZMM'] = (cnt['ZEND'] / mode[1]) * 0.70612
+
+    for axis in ('X', 'Y', 'Z'):
+        cnt[axis + 'IN'] = cnt[axis + 'MM'] / 25.4
+
+    if data is not None:
+        for key, val in cnt.items():
+            cnt[key] = val + data.get(key, 0)
+    return cnt

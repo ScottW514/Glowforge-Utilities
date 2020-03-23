@@ -1,39 +1,49 @@
-[GENERAL]
-base_dir: examples/_RESOURCES
-log_file: %(base_dir)s/LOG/emulator.log
-log_level: DEBUG
-
-# Uncommenting this line will cause the log message to be displayed on the console
-console_log_level: DEBUG
-
-motion_dir: %(base_dir)s/MOTION
-firmware_check: True
-firmware_dir: %(base_dir)s/FW
-image_dir: %(base_dir)s/IMG
-
 [SERVICE]
 server_url: https://app.glowforge.com
 status_service_url: wss://status.glowforge.com
 
 [MACHINE]
-ip_address: 192.168.100.101
-
 # See below for instructions on obtaining this information
 # DO NOT SHARE THIS INFORMATION - IT CANNOT BE CHANGED
 serial: 12345678
 hostname: ABC-123
 password: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-# This may not matter
+# These may not matter
 head_serial: 123456789
-
-# This is the most recent info
-firmware: 1.11.3-7
-app_version: 991aef8977eedb6b3a6e426eff34b7d2ee78a3f4
 head_firmware: 199234110
 
-[MATERIAL]
-thickness: .230
+[FACTORY_FIRMWARE]
+check: True
+download_dir: _RESOURCES/FW
+# This is the most recent info
+fw_version: 1.11.3-7
+app_version: 991aef8977eedb6b3a6e426eff34b7d2ee78a3f4
 
+
+[EMULATOR]
+base_dir: _RESOURCES
+firmware_check: True
+firmware_dl_dir: %(base_dir)s/FW
+motion_dl_dir: %(base_dir)s/MOTION
+image_src_dir: %(base_dir)s/IMG
+# Experimental - This may bypass the homing cycle, under certain unknown conditions
+bypass_homing: True
+material_thickness: .230
+
+[LOGGING]
+dir: _RESOURCES/LOG
+file: %(logging_dir)s/emulator.log
+level: DEBUG
+console_level: DEBUG
+save_sent_images: False
+
+[THERMAL]
+water_heater_percent: 10
+
+[MOTION]
+z_home_offset: 0
+warm_up_delay: 0
+cool_down_delay: 10
 
 #######################################################################################
 # Obtaining your machine login information
@@ -54,4 +64,3 @@ thickness: .230
 #   print password
 #
 # KEEP THESE SECRET!!!!!!
-

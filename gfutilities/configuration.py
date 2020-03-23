@@ -5,8 +5,9 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
-from typing import Any
 import configparser
+import logging
+from typing import Any
 
 _CONFIG = {}
 
@@ -35,6 +36,24 @@ def parse(cfg_file: str) -> None:
             _CONFIG['%s.%s' % (str.upper(section), str.upper(item[0]))] = value
 
 
+def log_level(level_str: str) -> int:
+    """
+    Returns logging log level object based on provided string.
+    :param level_str: Desired logging level
+    :type level_str: str
+    :return: Logging level object
+    :rtype: int
+    """
+    levels = {
+        'CRITICAL': logging.CRITICAL, 'ERROR': logging.ERROR, 'WARNING': logging.WARNING, 'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG
+    }
+    if level_str in levels:
+        return levels[level_str]
+    else:
+        return logging.INFO
+
+
 def get_cfg(parameter: str) -> Any:
     """
     Returns value of configuration parameter
@@ -55,3 +74,6 @@ def set_cfg(parameter: str, value: Any):
     :type value: Any
     """
     _CONFIG[parameter] = value
+
+
+__all__ = ['get_cfg', 'parse', 'set_cfg', 'log_level']
