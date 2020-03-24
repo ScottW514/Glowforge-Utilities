@@ -87,6 +87,7 @@ class Emulator(BaseMachine):
         if not self._running_action_cancelled:
             if msg['action_type'] == 'print':
                 send_wss_event(self._q_msg_tx, msg['id'], 'print:running')
+                send_wss_event(self._q_msg_tx, msg['id'], 'print:return_to_home:succeeded')
 
         self._last_action = msg['action_type']
 
