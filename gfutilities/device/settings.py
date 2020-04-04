@@ -265,10 +265,10 @@ MACHINE_SETTINGS = {
     "HCil": MachineSetting(int, False, None, None, None),  # Head Cam Illumination
     "HCrb": MachineSetting(int, True, None, None, 1100),  # Head Cam: Red Balance
     "HCvf": MachineSetting(int, True, 0, 1, 0),  # Head Cam: Vertical Flip
-    "HEfv": MachineSetting(int, True, None, None, None),  # Head: Firmware Version Head
+    "HEfv": MachineSetting(int, True, None, None, 199234110),  # Head: Firmware Version Head
     "HEhl": MachineSetting(int, True, None, None, 0),  # Head
     "HEid": MachineSetting(int, True, None, None, 1100),  # Head
-    "HEsn": MachineSetting(int, True, None, None, None),  # Serial Number Head
+    "HEsn": MachineSetting(int, True, None, None, 123456789),  # Serial Number Head
     "HEua": MachineSetting(int, True, None, None, 841174597),  # Head
     "HEub": MachineSetting(int, True, None, None, 5472275),  # Head
     "HEuc": MachineSetting(int, True, None, None, 19),  # Head
@@ -517,6 +517,7 @@ _CONFIG_PROVIDERS = {
     "MCov": "FACTORY_FIRMWARE.FW_VERSION",
     "MCsn": "MACHINE.SERIAL",
     "HEfv": "MACHINE.HEAD_FIRMWARE",
+    'HEid': "MACHINE.HEAD_ID",
     "HEsn": "MACHINE.HEAD_SERIAL",
 }
 

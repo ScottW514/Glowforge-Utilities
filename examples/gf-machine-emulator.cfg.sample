@@ -4,20 +4,22 @@ status_service_url: wss://status.glowforge.com
 
 [MACHINE]
 # See below for instructions on obtaining this information
+# Only necessary if you want to override
 # DO NOT SHARE THIS INFORMATION - IT CANNOT BE CHANGED
-serial: 12345678
-hostname: ABC-123
-password: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# serial: 12345678
+# hostname: ABC-123
+# password: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 # These may not matter
-head_serial: 123456789
-head_firmware: 199234110
+# head_id: 1100
+# head_serial: 123456789
+# head_firmware: 199234110
 
 [FACTORY_FIRMWARE]
 check: True
 download_dir: _RESOURCES/FW
 # This is the most recent info
-fw_version: 1.11.3-7
-app_version: 991aef8977eedb6b3a6e426eff34b7d2ee78a3f4
+fw_version: 1.12.1-10
+app_version: 370ee0b4dad80d10d088b6b65fd10a9144eff5a5
 
 
 [EMULATOR]
@@ -39,6 +41,8 @@ save_sent_images: False
 
 [THERMAL]
 water_heater_percent: 10
+max_start_temp: 27
+max_run_temp: 30
 
 [MOTION]
 z_home_offset: 0

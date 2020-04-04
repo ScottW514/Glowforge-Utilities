@@ -26,5 +26,5 @@ __all__ = [
     'LOGGER_NAME',
 
     # Named Tuples
-    'MachineSetting'
+    'MachineSetting',
 ]

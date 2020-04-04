@@ -56,8 +56,7 @@ class BaseMachine:
             logger.debug('action %s cancellation received' % action_id)
             self._running_action_cancelled = True
             return False
-        elif self.running_action_id:
-            self._send_cancelled_message(action_id, msg_type)
+        elif self.running_action_id or status == 'cancelled':
             return False
         else:
             logger.debug('running action set to %s' % action_id)

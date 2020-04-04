@@ -113,9 +113,9 @@ def firmware_check(s: Session) -> Union[dict, bool]:
         return False
     rj = r.json()
     logger.debug(rj)
-    if not rj['version'] == get_cfg('FACTORY_FIRMWARE.FW_VERSION'):
+    if rj['version'] is not None and not rj['version'] == get_cfg('FACTORY_FIRMWARE.FW_VERSION'):
         logger.info('New Firmware Available: Installed (%s), Available (%s)'
-                     % (get_cfg('FACTORY_FIRMWARE.FW_VERSION'), rj['version']))
+                    % (get_cfg('FACTORY_FIRMWARE.FW_VERSION'), rj['version']))
         return rj
     else:
         logger.info('LATEST ALREADY INSTALLED.')
@@ -171,9 +171,11 @@ def img_upload(s: Session, img: bytes, msg: dict) -> bool:
     url = get_cfg('SERVICE.SERVER_URL') + '/api/machines/%s/%s' % (msg['action_type'], msg['id'])
     headers = {'Content-Type': 'image/jpeg'}
     r = request(s, url, 'POST', data=img, headers=headers)
-    logger.debug(r.json)
     if not r:
+        logger.debug(r)
         return False
+    else:
+        logger.debug(r.json)
     logger.info('COMPLETE')
     return True
 

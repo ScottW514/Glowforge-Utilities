@@ -65,14 +65,18 @@ def get_cfg(parameter: str) -> Any:
     return _CONFIG.get(parameter)
 
 
-def set_cfg(parameter: str, value: Any):
+def set_cfg(parameter: str, value: Any, keep_value: bool = False):
     """
     Returns value of configuration parameter
     :param parameter: Parameter to set
     :type parameter: str
     :param value: Value of parameter
     :type value: Any
+    :param keep_value: Keep existing value if set
+    :type keep_value: bool
     """
+    if keep_value and get_cfg(parameter) is not None:
+        return
     _CONFIG[parameter] = value
 
 
