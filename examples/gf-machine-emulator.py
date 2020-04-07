@@ -9,7 +9,7 @@ SPDX-License-Identifier:    MIT
 import logging
 
 from gfutilities.configuration import *
-from gfutilities import ServiceConnector, Emulator
+from gfutilities import GFUIService, Emulator
 
 parse('gf-machine-emulator.cfg')
 
@@ -23,6 +23,6 @@ if get_cfg('LOGGING.FILE'):
     fh.setFormatter(logging.Formatter('%(asctime)s (%(levelname)s) %(module)s:%(funcName)s %(message)s'))
     logger.addHandler(fh)
 
-service = ServiceConnector()
+service = GFUIService(Emulator())
 service.connect()
-service.run(Emulator())
+service.run()

@@ -17,9 +17,9 @@ status_service_url: wss://status.glowforge.com
 [FACTORY_FIRMWARE]
 check: True
 download_dir: _RESOURCES/FW
-# This is the most recent info
-fw_version: 1.12.1-10
-app_version: 370ee0b4dad80d10d088b6b65fd10a9144eff5a5
+# Below only needed if you want to override
+# fw_version: 1.12.3-12
+# app_version: 370ee0b4dad80d10d088b6b65fd10a9144eff5a5
 
 
 [EMULATOR]

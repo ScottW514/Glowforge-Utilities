@@ -8,6 +8,7 @@ SPDX-License-Identifier:    MIT
 import logging
 from queue import Queue
 import time
+from typing import Any
 
 from gfutilities._common import *
 from gfutilities.configuration import get_cfg, set_cfg
@@ -397,7 +398,7 @@ MACHINE_SETTINGS = {
     "MCdb": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCds": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCdt": MachineSetting(int, True, None, None, None),  # BaseMachine Control: BaseMachine Time
-    "MCdv": MachineSetting(str, True, None, None, None),  # BaseMachine Control: Software Version
+    "MCdv": MachineSetting(str, True, None, None, '370ee0b4dad80d10d088b6b65fd10a9144eff5a5'),  # BaseMachine Control: Software Version
     "MCip": MachineSetting(str, True, None, None, '127.0.0.1'),  # BaseMachine Control: IP Address
     "MCla": MachineSetting(float, True, None, None, 0.13574219),  # BaseMachine Control
     "MClb": MachineSetting(float, True, None, None, 0.032226562),  # BaseMachine Control
@@ -405,11 +406,11 @@ MACHINE_SETTINGS = {
     "MCld": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCma": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCmi": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
-    "MCov": MachineSetting(str, True, None, None, None),  # BaseMachine Control: Firmware Version
+    "MCov": MachineSetting(str, True, None, None, '1.12.3-12'),  # BaseMachine Control: Firmware Version
     "MCpt": MachineSetting(int, True, None, None, 4),  # BaseMachine Control
     "MCrc": MachineSetting(int, True, None, None, 2),  # BaseMachine Control
     "MCsn": MachineSetting(int, True, None, None, None),  # BaseMachine Control: Serial Number
-    "MCsv": MachineSetting(str, True, None, None, "2.3.0"),  # BaseMachine Control
+    "MCsv": MachineSetting(str, True, None, None, "2.3.0"),  # BaseMachine Control: Settings Version
     "MCsw": MachineSetting(int, True, None, None, 27),  # BaseMachine Control
     "MCtc": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCut": MachineSetting(float, True, None, None, 0.26666668),  # BaseMachine Control
@@ -527,6 +528,19 @@ _REGISTERED_PROVIDERS = {
 }
 
 
+def get_machine_setting(parameter: str) -> Any:
+    """
+    Return value for machine setting
+    :param parameter: Setting
+    :type parameter: str
+    :return: Value or None if doesn't exist
+    """
+    setting = MACHINE_SETTINGS.get(parameter)
+    if setting is None:
+        return None
+    return setting.default
+
+
 def send_report(q: Queue, msg: dict) -> None:
     """
     Send device settings report in the required format.
@@ -557,9 +571,9 @@ def send_report(q: Queue, msg: dict) -> None:
                 value = setting.type(value)
             settings += '"{}":{},'.format(item, value)
 
-    # The service seems to bypass the homing process if we send it an empty settings value.
+    # The service appears to bypass the homing process if we send it an empty settings value.
     # It is assumed that this prevents the machine from re-homing every time it loses and regains
-    # the connection to the Glowforge service.
+    # the connection to the Glowforge service (a seemingly frequent occurrence).
     if not get_cfg('SETTINGS.SET') and not get_cfg('EMULATOR.BYPASS_HOMING'):
         send_wss_event(q, msg['id'], 'settings:completed',
                        data={'key': 'settings', 'value': '{"values":{%s}}' % settings[:-1]})

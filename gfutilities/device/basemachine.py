@@ -12,7 +12,8 @@ from threading import Thread
 from typing import Union
 
 from gfutilities._common import *
-from gfutilities.device.settings import send_report
+from gfutilities.configuration import set_cfg
+from gfutilities.device.settings import send_report, get_machine_setting
 from gfutilities.service.websocket import send_wss_event
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -31,8 +32,12 @@ class BaseMachine:
         self._action_thread: _ActionThread = _ActionThread(self, {})
         self._q_msg_tx: Union[Queue, None] = None
         self.running_action_id: Union[int, None] = 0
+        self.running_action_type: Union[str, None] = None
         self._running_action_cancelled: bool = False
         self._session: Session = Union[Queue, None]
+
+        set_cfg('FACTORY_FIRMWARE.FW_VERSION', get_machine_setting('MCov'), True)
+        set_cfg('FACTORY_FIRMWARE.APP_VERSION', get_machine_setting('MCdv'), True)
 
     def _ok_to_run_action(self, action_id: str, msg_type: str, status: str) -> bool:
         """
@@ -45,22 +50,25 @@ class BaseMachine:
         If there is a current running action, and this is not a request to cancel it, sends a cancelled message
         to the service for this requested action, and returns false.
         :param action_id: Action ID
-        :type action_id: dict
+        :type action_id: str
+        :param msg_type: Action Type
+        :type msg_type: str
         :param status: Status of message (either 'ready' or 'cancelled')
-        :type status: dict
+        :type status: str
         :return: Return True if this it is ok to run this action, False if not
         :rtype: bool
         """
         action_id = int(action_id)
         if action_id == self.running_action_id and status == 'cancelled':
-            logger.debug('action %s cancellation received' % action_id)
+            logger.debug('action %s (%s) cancellation received' % (action_id, msg_type))
             self._running_action_cancelled = True
             return False
         elif self.running_action_id or status == 'cancelled':
             return False
         else:
-            logger.debug('running action set to %s' % action_id)
+            logger.debug('running action set to %s (%s)' % (action_id, msg_type))
             self.running_action_id = action_id
+            self.running_action_type = msg_type
             self._running_action_cancelled = False
             return True
 
@@ -299,6 +307,7 @@ class _ActionThread(Thread):
         elif self._msg['action_type'] in ['motion', 'print']:
             self._machine.motion(self._msg)
         self._machine.running_action_id = None
+        self._machine.running_action_type = None
         logger.debug('action thread stop')
 
 

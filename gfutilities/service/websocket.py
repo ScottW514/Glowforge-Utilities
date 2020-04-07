@@ -8,6 +8,7 @@ SPDX-License-Identifier:    MIT
 from datetime import timedelta
 import json
 import logging
+from pathlib import Path
 from queue import Queue
 from requests import Request, Response, Session
 from threading import Thread
@@ -133,7 +134,9 @@ def firmware_download(s: Session, fw: dict) -> bool:
     :rtype: bool
     """
     logger.info('DOWNLOADING')
+    Path(get_cfg('FACTORY_FIRMWARE.DOWNLOAD_DIR')).mkdir(parents=True, exist_ok=True)
     r = request(s, fw['download_url'], 'GET', stream=True)
+
     with open('%s/glowforge-fw-v%s.fw' % (get_cfg('FACTORY_FIRMWARE.DOWNLOAD_DIR'), fw['version']), 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:
@@ -213,7 +216,7 @@ def load_motion(s: Session, url: str, out_file: str) -> Union[dict, bool]:
         size = len(puls_data[s:])
         stat = decode_all_steps(puls_data[s:])
         # TODO: REMOVE THIS TEMP RAW WRITE - ONLY FOR QUICK TESTING
-        base_file_name = '%s/%s' % (get_cfg('EMULATOR.MOTION_DL_DIR'), time.strftime("%Y-%m-%d_%H%M%S"))
+        base_file_name = '%s/%s' % (str(Path(get_cfg('LOGGING.FILE')).parent), time.strftime("%Y-%m-%d_%H%M%S"))
         raw = open(base_file_name + '.puls', 'wb')
         raw.write(puls_data)
         f.write(puls_data[s:])

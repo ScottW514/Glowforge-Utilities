@@ -23,7 +23,7 @@ class GFUIService:
     Glowforge UI Service Connector
     This connects to the servers specified in the configuration, and interfaces with the service.
     """
-    def __init__(self):
+    def __init__(self, machine: BaseMachine):
         """
         Class Initialization
         Initialized WSS Queues, and configures logging.
@@ -32,6 +32,7 @@ class GFUIService:
         self.q_msg_rx = Queue()
         self.q_msg_tx = Queue()
         self.q_capture = Queue()
+        self._machine = machine
         logger.info('INITIALIZED')
 
     def connect(self) -> bool:
@@ -55,27 +56,27 @@ class GFUIService:
             return False
         return True
 
-    def run(self, machine: BaseMachine) -> None:
+    def run(self) -> None:
         """
         Processes messages from WSS service
         :return:
         """
-        machine.start(self.session, self.q_msg_tx)
+        self._machine.start(self.session, self.q_msg_tx)
         while True:
             try:
                 msg = json.loads(self.q_msg_rx.get())
                 logger.info('service action request: %s (%s)' % (msg['action_type'], msg['status']))
                 result = 'dispatched'
                 if msg['action_type'] == 'settings' and msg['status'] == 'ready':
-                    machine.run_settings_report(msg)
+                    self._machine.run_settings_report(msg)
                 elif 'image' in msg['action_type']:
-                    machine.run_capture(msg)
+                    self._machine.run_capture(msg)
                 elif msg['action_type'] in ('hunt', 'motion', 'print'):
-                    machine.run_puls(msg)
+                    self._machine.run_puls(msg)
                 else:
                     result = 'ignored'
                 logger.info('%s (%s) service action %s' % (msg['action_type'], msg['status'], result))
                 self.q_msg_rx.task_done()
             except KeyboardInterrupt:
                 break
-        machine.stop()
+        self._machine.stop()
