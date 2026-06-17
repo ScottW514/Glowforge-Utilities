@@ -50,9 +50,29 @@ class Emulator(BaseMachine):
             img = 'HEAD_LASER_%s.jpg' % get_cfg('EMULATOR.MATERIAL_THICKNESS')
         else:
             img = 'HEAD_NO_LASER_%s.jpg' % get_cfg('EMULATOR.MATERIAL_THICKNESS')
-        with open('%s/%s' % (get_cfg('EMULATOR.IMAGE_SRC_DIR'), img), 'rb') as f:
-            img_upload(self._session, f.read(), msg)
+        self._capture_and_upload(msg, img)
         self._last_action = 'head_image'
+
+    def _capture_and_upload(self, msg: dict, img: str) -> None:
+        """
+        Read the canned image (the "capture") and upload it, emitting the
+        capture/upload progress events the v2.6.0 service expects during the
+        homing handshake. The service waits for '<action>:upload:completed'
+        (the image is now in storage) before fetching and analyzing it.
+        :param msg: Incoming WSS message
+        :type msg: dict
+        :param img: Image filename within EMULATOR.IMAGE_SRC_DIR
+        :type img: str
+        """
+        action = msg['action_type']
+        send_wss_event(self._q_msg_tx, msg['id'], '%s:capture:starting' % action)
+        with open('%s/%s' % (get_cfg('EMULATOR.IMAGE_SRC_DIR'), img), 'rb') as f:
+            data = f.read()
+        send_wss_event(self._q_msg_tx, msg['id'], '%s:capture:completed' % action)
+        send_wss_event(self._q_msg_tx, msg['id'], '%s:upload:starting' % action)
+        ok = img_upload(self._session, data, msg)
+        send_wss_event(self._q_msg_tx, msg['id'],
+                       '%s:upload:%s' % (action, 'completed' if ok else 'failed'))
 
     def _hunt(self, msg: dict) -> None:
         self._last_action = 'hunt'
@@ -71,8 +91,7 @@ class Emulator(BaseMachine):
             self._homing_stage = self._homing_stage + 1 if self._homing_stage < 4 else 0
         else:
             img = 'LID_IMAGE.jpg'
-        with open('%s/%s' % (get_cfg('EMULATOR.IMAGE_SRC_DIR'), img), 'rb') as f:
-            img_upload(self._session, f.read(), msg)
+        self._capture_and_upload(msg, img)
         self._last_action = 'lid_image'
 
     def _motion(self, msg: dict) -> None:

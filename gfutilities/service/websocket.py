@@ -10,6 +10,7 @@ import json
 import logging
 from pathlib import Path
 from queue import Queue
+import requests
 from requests import Request, Response, Session
 from threading import Thread
 import time
@@ -194,14 +195,24 @@ def img_upload(s: Session, img: bytes, msg: dict) -> bool:
     :rtype: bool
     """
     logger.info('START')
-    url = get_cfg('SERVICE.SERVER_URL') + '/api/machines/%s/%s' % (msg['action_type'], msg['id'])
-    headers = {'Content-Type': 'image/jpeg'}
-    r = request(s, url, 'POST', data=img, headers=headers)
-    if not r:
-        logger.debug(r)
-        return False
+    endpoint = msg.get('endpoint')
+    if endpoint:
+        # v2.6.0+ protocol: the service supplies a presigned storage URL in the
+        # action's "endpoint" field and the image is uploaded straight to it.
+        # The presigned URL carries its own auth, so it must NOT go through the
+        # authenticated Glowforge session (a Bearer header makes GCS reject it);
+        # PUT the raw bytes with a plain request.
+        r = requests.put(endpoint, data=img, headers={'Content-Type': 'image/jpeg'}, timeout=30)
+        ok = r.status_code in (200, 201, 204)
     else:
-        logger.debug(r.json)
+        # Legacy fallback: POST to the app server (pre-2.6.0 behaviour).
+        url = get_cfg('SERVICE.SERVER_URL') + '/api/machines/%s/%s' % (msg['action_type'], msg['id'])
+        r = request(s, url, 'POST', data=img, headers={'Content-Type': 'image/jpeg'})
+        ok = bool(r)
+    if not ok:
+        logger.error('FAILED: %s %s' % (getattr(r, 'status_code', '?'), getattr(r, 'reason', '')))
+        return False
+    logger.debug('upload response: %s' % r)
     logger.info('COMPLETE')
     return True
 

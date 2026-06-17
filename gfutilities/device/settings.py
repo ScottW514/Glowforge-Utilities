@@ -66,13 +66,17 @@ MACHINE_SETTINGS = {
     "BAyr": MachineSetting(int, True, None, None, 0),  # Board Accel
     "BAzi": MachineSetting(int, True, None, None, 0),  # Board Accel
     "BAzr": MachineSetting(int, True, None, None, 0),  # Board Accel
+    "BDbs": MachineSetting(int, True, None, None, 0),  # Beam Detect: (unconfirmed)
     "BDet": MachineSetting(int, True, None, None, 96),  # e t Beam Detect
     "BDie": MachineSetting(int, True, None, None, 0),  # Beam Detect
     "BDlk": MachineSetting(int, True, None, None, 1966),  # Beam Detect: lambda k
     "BDlt": MachineSetting(int, True, None, None, 6553),  # Beam Detect: lambda t
     "BDpe": MachineSetting(int, True, None, None, 0),  # Beam Detect
+    "BDps": MachineSetting(int, True, None, None, 0),  # Beam Detect: (unconfirmed)
+    "BDtb": MachineSetting(int, True, None, None, 0),  # Beam Detect: (unconfirmed)
     "BDtr": MachineSetting(int, True, None, None, 32),  # Beam Detect: theta r
     "BDtt": MachineSetting(int, True, None, None, 40),  # Beam Detect: theta t
+    "BDtv": MachineSetting(int, True, None, None, 0),  # Beam Detect: (unconfirmed)
     "BLev": MachineSetting(int, True, None, None, 0),  #
     "BLva": MachineSetting(int, True, None, None, 0),  #
     "BLvb": MachineSetting(int, True, None, None, 0),  #
@@ -95,11 +99,15 @@ MACHINE_SETTINGS = {
     "CCbp": MachineSetting(int, True, None, None, 0),  #
     "CCbt": MachineSetting(int, True, None, None, 0),  #
     "CCfl": MachineSetting(int, True, None, None, 0),  #
+    "CCif": MachineSetting(int, True, None, None, 0),  # CNC/cut control: (unconfirmed)
     "CCml": MachineSetting(int, True, None, None, 0),  #
     "CCpb": MachineSetting(int, True, None, None, 200000),  #
     "CCro": MachineSetting(int, True, None, None, 5000),  #
+    "CCrp": MachineSetting(int, True, None, None, 10000),  # CNC/cut control: (unconfirmed)
+    "CCsh": MachineSetting(int, True, None, None, 0),  # CNC/cut control: (unconfirmed)
     "CCst": MachineSetting(int, True, None, None, 2),  #
     "CCup": MachineSetting(int, True, None, None, 0),  #
+    "CCwp": MachineSetting(int, True, None, None, 0),  # CNC/cut control: (unconfirmed)
     "CCxp": MachineSetting(int, True, None, None, 0),  #
     "CCyp": MachineSetting(int, True, None, None, 0),  #
     "CCzp": MachineSetting(int, True, None, None, 0),  #
@@ -237,9 +245,10 @@ MACHINE_SETTINGS = {
     "FTxb": MachineSetting(int, True, None, None, 0),  #
     "FVer": MachineSetting(int, True, None, None, 0),  #
     "HAai": MachineSetting(int, True, None, None, 0),  # Head Accel
-    "HAdr": MachineSetting(int, True, None, None, 5),  # Head Accel
+    "HAar": MachineSetting(int, True, None, None, 0),  # Head Accel: run threshold
     "HAdb": MachineSetting(int, True, None, None, 5),  # Head Accel
     "HAdl": MachineSetting(int, True, None, None, 5),  # Head Accel
+    "HAdr": MachineSetting(int, True, None, None, 5),  # Head Accel
     "HAfa": MachineSetting(int, True, None, None, 0),  # Head Accel
     "HAfo": MachineSetting(int, True, None, None, 0),  # Head Accel
     "HAil": MachineSetting(int, True, None, None, 0),  # Head Accel
@@ -264,7 +273,9 @@ MACHINE_SETTINGS = {
     "HCga": MachineSetting(int, True, None, None, 30),  # Head Cam: Gain
     "HChf": MachineSetting(int, True, 0, 1, 1),  # Head Cam: Horizontal Flip
     "HCil": MachineSetting(int, False, None, None, None),  # Head Cam Illumination
+    "HCpr": MachineSetting(int, True, None, None, 0),  # Head Cam: (unconfirmed)
     "HCrb": MachineSetting(int, True, None, None, 1100),  # Head Cam: Red Balance
+    "HCsm": MachineSetting(int, True, None, None, 0),  # Head Cam: (unconfirmed)
     "HCvf": MachineSetting(int, True, 0, 1, 0),  # Head Cam: Vertical Flip
     "HEfv": MachineSetting(int, True, None, None, 199234110),  # Head: Firmware Version Head
     "HEhl": MachineSetting(int, True, None, None, 0),  # Head
@@ -292,7 +303,12 @@ MACHINE_SETTINGS = {
     "HTwx": MachineSetting(int, True, None, None, 2147483647),  # Head Temp
     "HTxb": MachineSetting(int, True, None, None, 0),  # Head Temp
     "HVcr": MachineSetting(int, True, None, None, 0),  #
+    "HVia": MachineSetting(int, True, None, None, 0),  # HV Laser Supply: (unconfirmed)
     "HVli": MachineSetting(int, True, None, None, 0),  #
+    "HVlo": MachineSetting(int, True, None, None, 0),  # HV Laser Supply: (unconfirmed)
+    "HVls": MachineSetting(int, True, None, None, 0),  # HV Laser Supply: (unconfirmed)
+    "HVpg": MachineSetting(int, True, None, None, 0),  # HV Laser Supply: power good
+    "HVps": MachineSetting(int, True, None, None, 0),  # HV Laser Supply: power good (sampled)
     "HVvo": MachineSetting(int, True, None, None, 0),  #
     "IAid": MachineSetting(int, True, None, None, 0),  #
     "IFdc": MachineSetting(int, True, None, None, 0),  # Intake Fan
@@ -318,14 +334,35 @@ MACHINE_SETTINGS = {
     "IFwn": MachineSetting(int, True, None, None, 0),  # Intake Fan
     "IFwx": MachineSetting(int, True, None, None, 0),  # Intake Fan
     "IMct": MachineSetting(int, True, None, None, 3500),  #
+    "IMff": MachineSetting(int, True, None, None, 0),  # Image capture: (unconfirmed)
     "IMfs": MachineSetting(int, True, None, None, 2),  #
     "IMjq": MachineSetting(int, True, None, None, 40),  #
     "IMmd": MachineSetting(int, True, None, None, 509649408),  #
+    "IMrh": MachineSetting(int, True, None, None, 0),  # Image capture: (unconfirmed)
+    "IMrs": MachineSetting(int, True, None, None, 0),  # Image capture: (unconfirmed)
+    "IMrw": MachineSetting(int, True, None, None, 0),  # Image capture: (unconfirmed)
     "IRli": MachineSetting(int, True, None, None, 0),  #
+    "IRpd": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor: poll period (ms)
     "IRva": MachineSetting(int, True, None, None, 32),  #
     "IRvb": MachineSetting(int, True, None, None, 32),  #
     "IRvc": MachineSetting(int, True, None, None, 35),  #
     "IRvd": MachineSetting(int, True, None, None, 36),  #
+    "IRwb": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor W: baseline
+    "IRwc": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor W: calibration center
+    "IRwv": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor W: live value
+    "IRwx": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor W: trip threshold
+    "IRxb": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor X: baseline
+    "IRxc": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor X: calibration center
+    "IRxv": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor X: live value
+    "IRxx": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor X: trip threshold
+    "IRyb": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Y: baseline
+    "IRyc": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Y: calibration center
+    "IRyv": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Y: live value
+    "IRyx": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Y: trip threshold
+    "IRzb": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Z: baseline
+    "IRzc": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Z: calibration center
+    "IRzv": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Z: live value
+    "IRzx": MachineSetting(int, True, None, None, 0),  # Lid IR flame sensor Z: trip threshold
     "ITcx": MachineSetting(int, True, None, None, 2147483647),  # Interconnect Temp
     "ITfc": MachineSetting(int, True, None, None, 0),  # Interconnect Temp
     "ITfo": MachineSetting(int, True, None, None, 0),  # Interconnect Temp
@@ -368,7 +405,9 @@ MACHINE_SETTINGS = {
     "LCfm": MachineSetting(int, True, None, None, 2),  # Lid Cam: Flash Mode
     "LCga": MachineSetting(int, True, None, None, 30),  # Lid Cam: Gain
     "LChf": MachineSetting(int, True, 0, 1, 1),  # Lid Cam: Horizontal Flip
+    "LCpr": MachineSetting(int, True, None, None, 0),  # Lid Cam: (unconfirmed)
     "LCrb": MachineSetting(int, True, None, None, 1100),  # Lid Cam: Red Balance
+    "LCsm": MachineSetting(int, True, None, None, 0),  # Lid Cam: (unconfirmed)
     "LCvf": MachineSetting(int, True, 0, 1, 0),  # Lid Cam: Vertical Flip
     "LLev": MachineSetting(int, True, None, None, 0),  # Lid LED
     "LLsp": MachineSetting(int, True, None, None, 28),  # Speed Lid LED
@@ -388,6 +427,7 @@ MACHINE_SETTINGS = {
     "LTxb": MachineSetting(int, True, None, None, 0),  # Lid Temp
     "MCbc": MachineSetting(int, True, None, None, 1),  # BaseMachine Control: Boot attempts
     "MCbf": MachineSetting(int, True, None, None, 1),  # BaseMachine Control: Boot Flags
+    "MCbm": MachineSetting(int, True, None, None, 0),  # BaseMachine Control: (unconfirmed)
     "MCbr": MachineSetting(int, True, None, None, 320),  # BaseMachine Control: Manufacturing Info
     "MCbu": MachineSetting(int, True, None, None, 20576),  # BaseMachine Control: Boot Fuses
     "MCcl": MachineSetting(int, True, None, None, 1000),  # BaseMachine Control
@@ -406,14 +446,20 @@ MACHINE_SETTINGS = {
     "MCld": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCma": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCmi": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
-    "MCov": MachineSetting(str, True, None, None, '1.12.3-12'),  # BaseMachine Control: Firmware Version
+    "MCov": MachineSetting(str, True, None, None, '2.6.0-2228'),  # BaseMachine Control: Firmware Version
     "MCpt": MachineSetting(int, True, None, None, 4),  # BaseMachine Control
     "MCrc": MachineSetting(int, True, None, None, 2),  # BaseMachine Control
     "MCsn": MachineSetting(int, True, None, None, None),  # BaseMachine Control: Serial Number
-    "MCsv": MachineSetting(str, True, None, None, "2.3.0"),  # BaseMachine Control: Settings Version
+    "MCsv": MachineSetting(str, True, None, None, "2.6.0"),  # BaseMachine Control: Settings Version
     "MCsw": MachineSetting(int, True, None, None, 27),  # BaseMachine Control
     "MCtc": MachineSetting(int, True, None, None, 0),  # BaseMachine Control
     "MCut": MachineSetting(float, True, None, None, 0.26666668),  # BaseMachine Control
+    "MMav": MachineSetting(int, True, None, None, 0),  # MM (unknown subsystem)
+    "MMca": MachineSetting(int, True, None, None, 0),  # MM (unknown subsystem)
+    "MMfr": MachineSetting(int, True, None, None, 0),  # MM (unknown subsystem)
+    "MMsh": MachineSetting(int, True, None, None, 0),  # MM (unknown subsystem)
+    "MMto": MachineSetting(int, True, None, None, 0),  # MM (unknown subsystem)
+    "MMus": MachineSetting(int, True, None, None, 0),  # MM (unknown subsystem)
     "NIcc": MachineSetting(int, True, None, None, 1),  # Network Interface
     "NIcf": MachineSetting(int, True, None, None, 0),  # Network Interface
     "NIdc": MachineSetting(int, True, None, None, 0),  # Network Interface
@@ -432,6 +478,7 @@ MACHINE_SETTINGS = {
     "NItb": MachineSetting(float, True, None, None, 0.0094909668),  # Network Interface
     "NItd": MachineSetting(int, True, None, None, 0),  # Network Interface
     "NIte": MachineSetting(int, True, None, None, 0),  # Network Interface
+    "NItf": MachineSetting(int, True, None, None, 0),  # Network Interface: (unconfirmed)
     "NItp": MachineSetting(int, True, None, None, 60),  # Network Interface
     "NItr": MachineSetting(float, True, None, None, 72.199997),  # Network Interface
     "NIts": MachineSetting(int, True, None, None, 0),  # Network Interface
@@ -457,6 +504,16 @@ MACHINE_SETTINGS = {
     "NRwe": MachineSetting(int, True, None, None, 2),  #
     "NRwf": MachineSetting(int, True, None, None, 500),  #
     "NRwj": MachineSetting(int, True, None, None, 250),  #
+    "NTac": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTad": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTau": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTax": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTay": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTfc": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTfd": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTfu": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTfx": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
+    "NTfy": MachineSetting(int, True, None, None, 0),  # NT (unknown subsystem)
     "PAcc": MachineSetting(int, True, None, None, 853),  # Purge Air
     "PAcm": MachineSetting(int, True, None, None, 0),  # Purge Air
     "PAli": MachineSetting(int, True, None, None, 1000),  # Purge Air
@@ -464,6 +521,8 @@ MACHINE_SETTINGS = {
     "PAos": MachineSetting(int, True, None, None, 0),  # Purge Air
     "PApd": MachineSetting(int, True, None, None, 1000),  # Purge Air
     "PCid": MachineSetting(int, True, None, None, 19795),  # ID PIC
+    "PDct": MachineSetting(int, True, None, None, 0),  # Pulse data: pass/segment count
+    "PDfm": MachineSetting(int, True, None, None, 0),  # Pulse data: format/mode
     "PRcp": MachineSetting(float, True, None, None, 2.875),  #
     "PRfc": MachineSetting(int, True, None, None, 0),  #
     "PRlc": MachineSetting(int, True, None, None, 0),  #
@@ -480,10 +539,12 @@ MACHINE_SETTINGS = {
     "RAid": MachineSetting(int, True, None, None, 0),  #
     "SAid": MachineSetting(int, True, None, None, 0),  # Request ID the settings report is responding to
     "SLto": MachineSetting(int, True, None, None, 300000),  #
+    "SNpl": MachineSetting(int, True, None, None, 0),  # SN (unknown subsystem)
     "STfr": MachineSetting(int, False, 1000, 200000, 10000),  # Step frequency
     "TCon": MachineSetting(int, True, None, None, 0),  #
     "TCth": MachineSetting(int, True, None, None, 2147483647),  #
     "TCtt": MachineSetting(int, True, None, None, 0),  #
+    "TRuc": MachineSetting(int, True, None, None, 0),  # TR (unknown subsystem)
     "UAid": MachineSetting(int, True, None, None, 0),  #
     "ULst": MachineSetting(int, True, None, None, 0),  #
     "WPon": MachineSetting(int, True, 0, 1, 1),  # On Water Pump
@@ -508,8 +569,10 @@ MACHINE_SETTINGS = {
     "ZScc": MachineSetting(int, True, None, None, 1),  # Current Z Step
     "ZSen": MachineSetting(int, True, 0, 1, 0),  # Enable Z Step
     "ZShc": MachineSetting(int, True, None, None, 1),  # Current Z Step
+    "ZShs": MachineSetting(int, True, None, None, 0),  # Z Step: home speed
     "ZSmd": MachineSetting(int, True, None, None, 1),  # Microstepping Mode Z Step
     "ZSrc": MachineSetting(int, True, None, None, 0),  # Current Z Step
+    "ZStp": MachineSetting(int, True, None, None, 0),  # Z Step: (unconfirmed)
 }
 
 _CONFIG_PROVIDERS = {
