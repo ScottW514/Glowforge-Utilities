@@ -1,0 +1,10 @@
+# Enforce consistent line endings across all platforms.
+# All text files are stored as LF in the repository and checked out as LF
+# on every OS (Windows included), so there is never a CRLF/LF mismatch.
+* text=auto eol=lf
+
+# Binary files: never apply text or line-ending conversion.
+*.puls binary
+*.jpg  binary
+*.jpeg binary
+*.png  binary
