@@ -15,8 +15,7 @@ from threading import Thread
 import time
 from typing import Union
 
-from lomond import WebSocket
-from lomond.persist import persist
+import websocket
 
 from gfutilities._common import *
 from gfutilities.configuration import get_cfg, set_cfg
@@ -31,8 +30,9 @@ logger = logging.getLogger(LOGGER_NAME)
 class WsClient(Thread):
     """
     Web Socket Client
-    Establishes a persistent WSS client that launches a separate thread to handle WSS operations.
-    Spools incoming messages to the q_msg_rx Queue, and sends any messages placed into the q_msg_tx Queue.
+    Establishes a persistent WSS client that runs the WebSocket event loop in a separate thread.
+    Incoming text messages are spooled to the q_msg_rx Queue; messages placed into the q_msg_tx
+    Queue are sent out by a dedicated transmit-pump thread.
     """
     def __init__(self, q_rx: Queue, q_tx: Queue):
         """
@@ -46,44 +46,67 @@ class WsClient(Thread):
         self.msg_q_tx = q_tx
         self.stop = False
         self.ready = False
-        self.ws = WebSocket(url=get_cfg('SERVICE.STATUS_SERVICE_URL') + '/' + get_cfg('SESSION.WS_TOKEN'),
-                            protocols=['glowforge'], agent=get_cfg('SESSION.USER_AGENT'))
-        self.ignore_events = ['ping', 'pong', 'poll', 'connecting', 'connected']
+        self.ws = websocket.WebSocketApp(
+            get_cfg('SERVICE.STATUS_SERVICE_URL') + '/' + get_cfg('SESSION.WS_TOKEN'),
+            header={'User-Agent': get_cfg('SESSION.USER_AGENT')},
+            subprotocols=['glowforge'],
+            on_open=self._on_open,
+            on_message=self._on_message,
+            on_error=self._on_error,
+            on_close=self._on_close,
+        )
         Thread.__init__(self)
+
+    def _on_open(self, _ws) -> None:
+        """WS handshake complete - ready to send/receive."""
+        logger.info('RX-EVENT: ready')
+        self.ready = True
+
+    def _on_message(self, _ws, message) -> None:
+        """Service sent us a message. Text frames arrive as str, binary frames as bytes."""
+        if isinstance(message, (bytes, bytearray)):
+            logger.error('UNEXPECTED BINARY RX-EVENT (%s bytes)' % len(message))
+            return
+        logger.debug(message)
+        self.msg_q_rx.put(message)
+
+    def _on_error(self, _ws, error) -> None:
+        logger.error('RX-EVENT: error: %s' % error)
+
+    def _on_close(self, _ws, status_code, msg) -> None:
+        self.ready = False
+        logger.info('RX-EVENT: closed (%s, %s)' % (status_code, msg))
 
     def run(self) -> None:
         """
-        Thread loop
-        Listens for WS messages, and adds them the q_msg_rx Queue.
-        Monitors the q_msg_tx, and sends any messages it finds.
-        Handles PING, PONG, and POLL messages.
+        Thread loop.
+        Starts the transmit pump, then runs the WebSocket event loop, reconnecting
+        automatically until stop is requested.
         :return:
         """
-        for event in persist(self.ws):
-            if event.name not in self.ignore_events:
-                logger.info('RX-EVENT: ' + event.name)
-                logger.debug(event)
-            if self.stop:
-                logger.info('STOP REQUESTED')
-                break
-            # WS reporting session is established
-            if event.name == 'ready':
-                self.ready = True
-            # Service has sent us a text message
-            elif event.name == 'text':
-                logger.debug(event.text)
-                self.msg_q_rx.put(event.text)
-            elif event.name not in self.ignore_events:
-                logger.error('UNKNOWN RX-EVENT: ' + event.name)
-            while self.ready:
-                if not self.msg_q_tx.empty():
-                    send_msg = self.msg_q_tx.get()
-                    logger.info('TX-EVENT: ' + send_msg.strip())
-                    self.ws.send_text(send_msg)
-                    self.msg_q_tx.task_done()
-                else:
-                    break
+        Thread(target=self._tx_pump, daemon=True).start()
+        # reconnect: auto-retry the connection every 5s (the service drops it frequently).
+        # ping_interval: keep the connection alive (the service speaks standard WS ping/pong).
+        self.ws.run_forever(reconnect=5, ping_interval=30, ping_timeout=10)
         logger.info('CLOSING')
+
+    def _tx_pump(self) -> None:
+        """
+        Drains the transmit queue and sends messages while the socket is open.
+        Runs until stop is requested, then closes the socket so run_forever() returns.
+        :return:
+        """
+        while not self.stop:
+            if self.ready and not self.msg_q_tx.empty():
+                send_msg = self.msg_q_tx.get()
+                logger.info('TX-EVENT: ' + send_msg.strip())
+                try:
+                    self.ws.send(send_msg)
+                except websocket.WebSocketException as e:
+                    logger.error('TX FAILED: %s' % e)
+                self.msg_q_tx.task_done()
+            else:
+                time.sleep(0.1)
         self.ws.close()
 
 
@@ -208,18 +231,28 @@ def load_motion(s: Session, url: str, out_file: str) -> Union[dict, bool]:
         if puls_data[1:4].decode() != 'GF1':
             logger.error('received data not a GF puls file')
             return False
-        info['header_len'] = _byte_to_int(puls_data[4:8]) - 8
-        s = 8
-        while s < (info['header_len'] + 8):
-            info['header_data'][puls_data[s:s + 4].decode()] = _byte_to_int(puls_data[s + 4:s + 8])
-            s += 8
-        size = len(puls_data[s:])
-        stat = decode_all_steps(puls_data[s:])
+        total_header = _byte_to_int(puls_data[4:8])
+        # iter_content() only guarantees *up to* chunk_size bytes per chunk, and the
+        # header has grown past 1 KB on newer firmware, so it can span several chunks.
+        # Buffer until the whole header is present before parsing it.
+        while len(puls_data) < total_header:
+            try:
+                puls_data += next(res)
+            except StopIteration:
+                logger.error('puls file ended before header was complete')
+                return False
+        info['header_len'] = total_header - 8
+        pos = 8
+        while pos < total_header:
+            info['header_data'][puls_data[pos:pos + 4].decode()] = _byte_to_int(puls_data[pos + 4:pos + 8])
+            pos += 8
+        size = len(puls_data[pos:])
+        stat = decode_all_steps(puls_data[pos:])
         # TODO: REMOVE THIS TEMP RAW WRITE - ONLY FOR QUICK TESTING
         base_file_name = '%s/%s' % (str(Path(get_cfg('LOGGING.FILE')).parent), time.strftime("%Y-%m-%d_%H%M%S"))
         raw = open(base_file_name + '.puls', 'wb')
         raw.write(puls_data)
-        f.write(puls_data[s:])
+        f.write(puls_data[pos:])
         for chunk in res:
             if chunk:
                 size = size + len(chunk)

@@ -1,2 +1,3 @@
-requests
-lomond
+requests>=2.31
+urllib3>=2
+websocket-client>=1.7

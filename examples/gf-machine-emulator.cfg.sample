@@ -34,7 +34,7 @@ material_thickness: .230
 
 [LOGGING]
 dir: _RESOURCES/LOG
-file: %(logging_dir)s/emulator.log
+file: %(dir)s/emulator.log
 level: DEBUG
 console_level: DEBUG
 save_sent_images: False
