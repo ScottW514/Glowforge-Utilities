@@ -9,7 +9,8 @@ setup(
     version='0.8.4',
     packages=find_packages(),
     license='MIT',
-    long_description=open('README.txt').read(),
+    long_description=open('README.md', encoding='utf-8').read(),
+    long_description_content_type='text/markdown',
     keywords='Glowforge OpenGlow',
     python_requires='>=3.8',
     install_requires=[

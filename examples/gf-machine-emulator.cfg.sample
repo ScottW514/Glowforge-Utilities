@@ -48,23 +48,3 @@ max_run_temp: 30
 z_home_offset: 0
 warm_up_delay: 0
 cool_down_delay: 10
-
-#######################################################################################
-# Obtaining your machine login information
-# Hostname is simple.  It's the identifier shown at the command prompt (use all caps).
-# To obtain the serial number, enter the following in the python shell on your GF:
-#   def read_file(filename):
-#       with open(filename) as f:
-#           return f.read()
-#   int(read_file('/sys/fsl_otp/HW_OCOTP_MAC0'), 16)
-#
-# To obtain the password, enter the following in the python shell on your GF:
-#   def read_file(filename):
-#       with open(filename) as f:
-#           return f.read()
-#   password = ''
-#   for x in range(8):
-#       password += "%08x" % int(read_file('/sys/fsl_otp/HW_OCOTP_SRK%d' % d), 16)
-#   print password
-#
-# KEEP THESE SECRET!!!!!!
