@@ -6,7 +6,7 @@ setup(
     author='Scott Wiederhold',
     author_email='s.e.wiederhold@gmail.com',
     url='https://github.com/ScottW514/Glowforge-Utilities',
-    version='0.9.0',
+    version='0.9.1',
     packages=find_packages(),
     license='MIT',
     long_description=open('README.md', encoding='utf-8').read(),
