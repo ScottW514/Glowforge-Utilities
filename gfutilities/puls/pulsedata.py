@@ -62,7 +62,7 @@ def decode_all_steps(puls: bytes, data: dict = None, mode: tuple = (8, 2)) -> di
     return cnt
 
 
-def generate_linear_puls(x: int, y: int, outfile: str) -> None:
+def generate_linear_puls(x: int, y: int, outfile) -> None:
     expected_count = abs(x) if abs(x) >= abs(y) else abs(y)
 
     max_speed = 5
@@ -74,7 +74,10 @@ def generate_linear_puls(x: int, y: int, outfile: str) -> None:
     steps = 0
     d = min_speed
 
-    with open(outfile, 'bw') as f:
+    # outfile may be a path or an already-open binary file object (the
+    # job-held exclusive pulse-device fd; the caller owns and closes it).
+    from contextlib import nullcontext
+    with (nullcontext(outfile) if hasattr(outfile, 'write') else open(outfile, 'bw')) as f:
         for xs, ys in _step_gen(x, y):
             steps += 1
             s = 0

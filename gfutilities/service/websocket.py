@@ -217,7 +217,7 @@ def img_upload(s: Session, img: bytes, msg: dict) -> bool:
     return True
 
 
-def load_motion(s: Session, url: str, out_file: str) -> Union[dict, bool]:
+def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
     """
     Downloads motion/print file, parses header
     :param s: Requests Session object
@@ -236,7 +236,16 @@ def load_motion(s: Session, url: str, out_file: str) -> Union[dict, bool]:
         'size': 0,
         'run_time': None,
     }
-    with open(out_file, 'wb') as f:
+    # out_file may be a path or an already-open binary file object. A machine
+    # streaming to the exclusive-open pulse device holds one flock'd fd for
+    # the whole job (the kernel dead man's switch) and passes it in here; in
+    # that case the caller owns the fd and it must not be closed.
+    from contextlib import nullcontext
+    if hasattr(out_file, 'write'):
+        out_ctx = nullcontext(out_file)
+    else:
+        out_ctx = open(out_file, 'wb')
+    with out_ctx as f:
         res = r.iter_content(chunk_size=1024)
         puls_data = next(res)
         if puls_data[1:4].decode() != 'GF1':
