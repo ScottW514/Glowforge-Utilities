@@ -12,8 +12,10 @@ _decode_step_codes = {
     'XN': {'mask': 0b00000011, 'test': 0b00000011},  # X- Step
     'YN': {'mask': 0b00001100, 'test': 0b00000100},  # Y- Step
     'YP': {'mask': 0b00001100, 'test': 0b00001100},  # Y+ Step
-    'ZP': {'mask': 0b01100000, 'test': 0b00100000},  # Z+ Step
-    'ZN': {'mask': 0b01100000, 'test': 0b01100000},  # Z- Step
+    # Z sign hardware-verified 2026-07-26: bit 6 (Z_DIR) SET moves the lens
+    # UP, away from the bed = Z+ (audit N3; this table had the two inverted).
+    'ZP': {'mask': 0b01100000, 'test': 0b01100000},  # Z+ Step (Z_DIR set)
+    'ZN': {'mask': 0b01100000, 'test': 0b00100000},  # Z- Step
 }
 
 _SPEED = 1000
