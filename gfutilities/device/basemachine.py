@@ -72,6 +72,16 @@ class BaseMachine:
             self._running_action_cancelled = False
             return True
 
+    def _action_cleanup(self) -> None:
+        """
+        Post-action failsafe hook, called by the action thread after every
+        action - including ones that raised. Child classes override this to
+        force their hardware safe (e.g. lock the laser latch); the default
+        does nothing.
+        :return:
+        """
+        pass
+
     def _button_wait(self, msg: dict) -> None:
         """
         Child class handler for "print:waiting" event - waiting for button push
@@ -296,19 +306,30 @@ class _ActionThread(Thread):
 
     def run(self) -> None:
         logger.debug('action thread start')
-        if self._msg['action_type'] == 'lid_image':
-            self._machine.lid_image(self._msg)
-        elif self._msg['action_type'] == 'head_image':
-            self._machine.head_image(self._msg)
-        elif self._msg['action_type'] == 'lidar_image':
-            self._machine.lidar_image(self._msg)
-        elif self._msg['action_type'] == 'hunt':
-            self._machine.hunt(self._msg)
-        elif self._msg['action_type'] in ['motion', 'print']:
-            self._machine.motion(self._msg)
-        self._machine.running_action_id = None
-        self._machine.running_action_type = None
-        logger.debug('action thread stop')
+        try:
+            if self._msg['action_type'] == 'lid_image':
+                self._machine.lid_image(self._msg)
+            elif self._msg['action_type'] == 'head_image':
+                self._machine.head_image(self._msg)
+            elif self._msg['action_type'] == 'lidar_image':
+                self._machine.lidar_image(self._msg)
+            elif self._msg['action_type'] == 'hunt':
+                self._machine.hunt(self._msg)
+            elif self._msg['action_type'] in ['motion', 'print']:
+                self._machine.motion(self._msg)
+        except Exception:
+            # A crashed action must not leave the job armed: without this,
+            # an exception mid-print left the action registered as running
+            # and the laser latch unlocked (audit M18).
+            logger.exception('action %s crashed' % self._msg.get('action_type'))
+        finally:
+            try:
+                self._machine._action_cleanup()
+            except Exception:
+                logger.exception('action cleanup failed')
+            self._machine.running_action_id = None
+            self._machine.running_action_type = None
+            logger.debug('action thread stop')
 
 
 __all__ = ['BaseMachine']
