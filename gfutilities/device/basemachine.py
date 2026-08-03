@@ -319,8 +319,8 @@ class _ActionThread(Thread):
                 self._machine.motion(self._msg)
         except Exception:
             # A crashed action must not leave the job armed: without this,
-            # an exception mid-print left the action registered as running
-            # and the laser latch unlocked (audit M18).
+            # an exception mid-print would leave the action registered as
+            # running and the laser latch unlocked.
             logger.exception('action %s crashed' % self._msg.get('action_type'))
         finally:
             try:
