@@ -14,7 +14,7 @@ from typing import Union
 from gfutilities._common import *
 from gfutilities.configuration import set_cfg
 from gfutilities.device.settings import send_report, get_machine_setting
-from gfutilities.service.websocket import send_wss_event
+from gfutilities.service.websocket import send_wss_event, firmware_check
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -34,6 +34,9 @@ class BaseMachine:
         self.running_action_id: Union[int, None] = 0
         self.running_action_type: Union[str, None] = None
         self._running_action_cancelled: bool = False
+        # Per-shot camera settings the service attaches to the current image
+        # action (canonical source for the image handlers; see _image_settings).
+        self._action_settings: dict = {}
         self._session: Session = Union[Queue, None]
 
         set_cfg('FACTORY_FIRMWARE.FW_VERSION', get_machine_setting('MCov'), True)
@@ -63,14 +66,52 @@ class BaseMachine:
             logger.debug('action %s (%s) cancellation received' % (action_id, msg_type))
             self._running_action_cancelled = True
             return False
-        elif self.running_action_id or status == 'cancelled':
+        if status == 'cancelled':
             return False
-        else:
-            logger.debug('running action set to %s (%s)' % (action_id, msg_type))
-            self.running_action_id = action_id
-            self.running_action_type = msg_type
-            self._running_action_cancelled = False
-            return True
+        # Only a 'ready' action starts. The service uses 'ready' to launch work;
+        # the other status values in the protocol (new/started/success/failure)
+        # are never a launch, so treat anything that is not 'ready' as a no-op
+        # rather than starting the action.
+        if status != 'ready':
+            logger.debug('ignoring status "%s" for action %s (%s)' % (status, action_id, msg_type))
+            return False
+        if self.running_action_id:
+            return False
+        logger.debug('running action set to %s (%s)' % (action_id, msg_type))
+        self.running_action_id = action_id
+        self.running_action_type = msg_type
+        self._running_action_cancelled = False
+        return True
+
+    @staticmethod
+    def _image_settings(msg: dict) -> dict:
+        """
+        Normalize the per-shot camera settings the service attaches to an
+        image action. The service sends them either as a dict (e.g.
+        {"LCfl":1} lid flash, or {"HCil":..,"HCae":0,"HCex":..,"HCag":0,
+        "HCga":..} head exposure/gain) or, for lidar, as a list of dicts
+        (measure-laser on/off). Returns the single/first settings dict, or
+        {} when the action carries none.
+
+        Policy (which keys a machine honors is up to its hardware layer):
+        illumination (HCil) and lid flash (LCfl) are lighting the capture
+        path can honor directly. The factory-scale exposure/gain values
+        (HCex/HCga/HCae/HCag) are deliberately NOT applied on the mainline
+        camera - its controls use different units and the raw values would
+        mis-expose - so a machine uses its own camera defaults there (see
+        the head-image handler in gfhardware). This is a documented
+        override, not an omission.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return: normalized settings dict
+        :rtype: dict
+        """
+        s = msg.get('settings')
+        if isinstance(s, list):
+            return s[0] if s else {}
+        if isinstance(s, dict):
+            return s
+        return {}
 
     def _action_cleanup(self) -> None:
         """
@@ -102,7 +143,8 @@ class BaseMachine:
         :return:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'head_image:starting')
-        self._head_image(msg)
+        self._action_settings = self._image_settings(msg)
+        self._head_image(msg, self._action_settings or None)
         send_wss_event(self._q_msg_tx, msg['id'], 'head_image:completed')
 
     def _head_image(self, msg: dict, settings: dict = None) -> None:
@@ -158,6 +200,7 @@ class BaseMachine:
         :return:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'lid_image:starting')
+        self._action_settings = self._image_settings(msg)
         self._lid_image(msg)
         send_wss_event(self._q_msg_tx, msg['id'], 'lid_image:completed')
 
@@ -182,8 +225,73 @@ class BaseMachine:
         :return:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'lidar_image:starting')
-        self._head_image(msg, msg['settings'][0])
+        self._action_settings = self._image_settings(msg)
+        self._head_image(msg, self._action_settings or None)
         send_wss_event(self._q_msg_tx, msg['id'], 'lidar_image:completed')
+
+    def user_image(self, msg: dict) -> None:
+        """
+        Process user image request (a user-requested camera snapshot).
+        Sends related start and finish messages, and calls child class handler.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        send_wss_event(self._q_msg_tx, msg['id'], 'user_image:starting')
+        self._action_settings = self._image_settings(msg)
+        self._user_image(msg)
+        send_wss_event(self._q_msg_tx, msg['id'], 'user_image:completed')
+
+    def _user_image(self, msg: dict) -> None:
+        """
+        Child class handler for a user-requested image.
+        Defaults to the bed (lid) view, which is what a user snapshot shows.
+        Child classes may override to select a different camera.
+        TODO(Phase E): confirm which camera the 2.6.0 service expects for
+        user_image, and whether it carries capture settings.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        self._lid_image(msg)
+
+    def run_update_check(self, msg: dict) -> None:
+        """
+        Answer a firmware update_check without ever installing factory
+        firmware. Probes the advertised factory version (recorded for the
+        forgectrl compatibility banner) and acknowledges the check, then
+        reports that the update is skipped - ForgeFIRM is not the factory
+        firmware and never applies a factory image.
+        Interface for the action dispatch.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:check:starting')
+        try:
+            firmware_check(self._session)
+        except Exception:
+            logger.exception('firmware version probe failed')
+            send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:check:failed')
+            return
+        send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:check:completed')
+        send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:skipping')
+
+    def run_factory_reset(self, msg: dict) -> None:
+        """
+        Acknowledge a factory_reset request without acting on it. A cloud
+        command must never wipe a ForgeFIRM machine, so this logs the refusal
+        and reports the action cancelled.
+        Interface for the action dispatch.
+        TODO(Phase E): confirm the exact acknowledgement the 2.6.0 app
+        expects for a declined factory_reset.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        logger.warning('factory_reset requested by service; ForgeFIRM does not '
+                       'reset on cloud command - acknowledging without action')
+        send_wss_event(self._q_msg_tx, msg['id'], 'factory_reset:cancelled')
 
     def motion(self, msg: dict) -> None:
         """
@@ -313,6 +421,8 @@ class _ActionThread(Thread):
                 self._machine.head_image(self._msg)
             elif self._msg['action_type'] == 'lidar_image':
                 self._machine.lidar_image(self._msg)
+            elif self._msg['action_type'] == 'user_image':
+                self._machine.user_image(self._msg)
             elif self._msg['action_type'] == 'hunt':
                 self._machine.hunt(self._msg)
             elif self._msg['action_type'] in ['motion', 'print']:

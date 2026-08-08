@@ -69,7 +69,11 @@ class WsClient(Thread):
             logger.error('UNEXPECTED BINARY RX-EVENT (%s bytes)' % len(message))
             return
         logger.debug(message)
-        self.msg_q_rx.put(message)
+        # The service packs several newline-delimited JSON objects into a
+        # single text frame; enqueue each object on its own so the consumer
+        # decodes one action at a time.
+        for obj in split_frame(message):
+            self.msg_q_rx.put(obj)
 
     def _on_error(self, _ws, error) -> None:
         logger.error('RX-EVENT: error: %s' % error)
@@ -111,6 +115,45 @@ class WsClient(Thread):
         self.ws.close()
 
 
+def split_frame(message: str) -> list:
+    """
+    Split a WebSocket text frame into its individual JSON objects.
+
+    The service may pack several newline-delimited JSON objects into one
+    frame; return each non-blank line so they can be decoded separately.
+    :param message: raw text frame
+    :type message: str
+    :return: list of JSON object strings (order preserved)
+    :rtype: list
+    """
+    return [line.strip() for line in message.splitlines() if line.strip()]
+
+
+def record_factory_latest(version: str) -> None:
+    """
+    Record the latest factory firmware version the service advertises, for
+    the forgectrl compatibility banner. ForgeFIRM never installs factory
+    firmware; this only informs the operator whether the live Glowforge
+    service has moved past the version this release was tested against.
+    No-op unless FACTORY_FIRMWARE.STATUS_FILE is configured.
+    :param version: version string reported by the service
+    :type version: str
+    """
+    path = get_cfg('FACTORY_FIRMWARE.STATUS_FILE')
+    if not path:
+        return
+    try:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump({
+                'latest_gf_version': version,
+                'tested_against_gf': get_cfg('FACTORY_FIRMWARE.FW_VERSION'),
+                'checked_at': int(time.time()),
+            }, f)
+    except OSError as e:
+        logger.warning('could not record factory-latest version: %s' % e)
+
+
 def _byte_to_int(data: bytes) -> int:
     """
     Returns integer value of big endian byte data
@@ -123,12 +166,18 @@ def _byte_to_int(data: bytes) -> int:
 
 def firmware_check(s: Session) -> Union[dict, bool]:
     """
-    Checks for the latest version of available firmware.
-    Returns a {dict} if new firmware is available.
-    {'version': '<new version>', 'download_url': '<url to download firmware>'}
+    Query the factory firmware version the service currently advertises and
+    record it for the forgectrl compatibility banner. ForgeFIRM never
+    downloads or installs factory firmware - this is a read-only version
+    probe, not an update step.
+
+    Returns a {dict} when the advertised version differs from the version
+    this release was tested against (FACTORY_FIRMWARE.FW_VERSION), meaning
+    the live Glowforge service has moved past our tested baseline:
+    {'version': '<latest factory version>', 'download_url': '<url>'}
     :param s: Requests Session object
     :type s: Session
-    :return: Returns False if configured firmware is equal latest.
+    :return: version dict when newer than our baseline, else False
     :rtype: Union[dict, bool]
     """
     logger.info('CHECKING')
@@ -138,12 +187,15 @@ def firmware_check(s: Session) -> Union[dict, bool]:
         return False
     rj = r.json()
     logger.debug(rj)
-    if rj['version'] is not None and not rj['version'] == get_cfg('FACTORY_FIRMWARE.FW_VERSION'):
-        logger.info('New Firmware Available: Installed (%s), Available (%s)'
-                    % (get_cfg('FACTORY_FIRMWARE.FW_VERSION'), rj['version']))
+    if rj.get('version') is not None:
+        record_factory_latest(rj['version'])
+    if rj.get('version') is not None and not rj['version'] == get_cfg('FACTORY_FIRMWARE.FW_VERSION'):
+        logger.info('Glowforge service advertises firmware %s; this release was '
+                    'tested against %s (cloud mode may be affected)'
+                    % (rj['version'], get_cfg('FACTORY_FIRMWARE.FW_VERSION')))
         return rj
     else:
-        logger.info('LATEST ALREADY INSTALLED.')
+        logger.info('SERVICE FIRMWARE MATCHES TESTED BASELINE.')
         return False
 
 

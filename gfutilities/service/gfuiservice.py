@@ -13,7 +13,8 @@ from gfutilities._common import *
 from gfutilities.configuration import *
 from gfutilities.device.basemachine import BaseMachine
 from gfutilities.service.authentication import authenticate_machine
-from gfutilities.service.websocket import get_session, firmware_check, firmware_download, ws_connect
+from gfutilities.service.dispatch import dispatch_action
+from gfutilities.service.websocket import get_session, firmware_check, ws_connect
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -46,11 +47,12 @@ class GFUIService:
         # Authenticate machine
         if not authenticate_machine(self.session):
             return False
-        # Check for new firmware
+        # Check the factory firmware version the service advertises, and
+        # record it for the forgectrl compatibility banner. ForgeFIRM never
+        # downloads or installs factory firmware, so the result only informs
+        # the operator (see run_update_check / record_factory_latest).
         if get_cfg('FACTORY_FIRMWARE.CHECK'):
-            fw = firmware_check(self.session)
-            if fw:
-                firmware_download(self.session, fw)
+            firmware_check(self.session)
         # Establish WebSocket Connection
         if not ws_connect(self.q_msg_rx, self.q_msg_tx):
             return False
@@ -64,19 +66,20 @@ class GFUIService:
         self._machine.start(self.session, self.q_msg_tx)
         while True:
             try:
-                msg = json.loads(self.q_msg_rx.get())
-                logger.info('service action request: %s (%s)' % (msg['action_type'], msg['status']))
-                result = 'dispatched'
-                if msg['action_type'] == 'settings' and msg['status'] == 'ready':
-                    self._machine.run_settings_report(msg)
-                elif 'image' in msg['action_type']:
-                    self._machine.run_capture(msg)
-                elif msg['action_type'] in ('hunt', 'motion', 'print'):
-                    self._machine.run_puls(msg)
-                else:
-                    result = 'ignored'
-                logger.info('%s (%s) service action %s' % (msg['action_type'], msg['status'], result))
-                self.q_msg_rx.task_done()
+                raw = self.q_msg_rx.get()
             except KeyboardInterrupt:
                 break
+            try:
+                msg = json.loads(raw)
+            except (ValueError, TypeError):
+                logger.warning('unparseable service message: %r',
+                               raw[:200] if isinstance(raw, str) else raw)
+                self.q_msg_rx.task_done()
+                continue
+            logger.info('service action request: %s (%s)',
+                        msg.get('action_type'), msg.get('status'))
+            result = dispatch_action(self._machine, msg, allow_print=True)
+            logger.info('%s (%s) service action %s',
+                        msg.get('action_type'), msg.get('status'), result)
+            self.q_msg_rx.task_done()
         self._machine.stop()

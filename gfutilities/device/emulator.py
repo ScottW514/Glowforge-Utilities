@@ -46,7 +46,10 @@ class Emulator(BaseMachine):
         pass
 
     def _head_image(self, msg: dict, settings: dict = None) -> None:
-        if settings is not None and settings.get('HCil') > 0:
+        # HCil (head illumination) may be absent from a settings dict, so
+        # guard the comparison - a missing key must not raise.
+        hcil = (settings or {}).get('HCil')
+        if hcil and hcil > 0:
             img = 'HEAD_LASER_%s.jpg' % get_cfg('EMULATOR.MATERIAL_THICKNESS')
         else:
             img = 'HEAD_NO_LASER_%s.jpg' % get_cfg('EMULATOR.MATERIAL_THICKNESS')
