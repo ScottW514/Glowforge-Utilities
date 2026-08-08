@@ -35,19 +35,28 @@ class WsClient(Thread):
     Incoming text messages are spooled to the q_msg_rx Queue; messages placed into the q_msg_tx
     Queue are sent out by a dedicated transmit-pump thread.
     """
-    def __init__(self, q_rx: Queue, q_tx: Queue):
+    def __init__(self, q_rx: Queue, q_tx: Queue, session=None):
         """
         Class Initializer
         :param q_rx: WSS RX Message Queue
         :type q_rx: Queue
         :param q_tx: WSS TX Message Queue
         :type q_tx: Queue
+        :param session: authenticated requests Session used to refresh the
+            single-use ws_token before each reconnect. None keeps a
+            single-connect client (reconnects reuse the existing token).
         """
         self.msg_q_rx = q_rx
         self.msg_q_tx = q_tx
         self.stop = False
         self.ready = False
-        self.ws = websocket.WebSocketApp(
+        self._session = session
+        self.ws = None
+        Thread.__init__(self)
+
+    def _build(self) -> 'websocket.WebSocketApp':
+        """Build a WebSocketApp for the ws_token currently in config."""
+        return websocket.WebSocketApp(
             get_cfg('SERVICE.STATUS_SERVICE_URL') + '/' + get_cfg('SESSION.WS_TOKEN'),
             header={'User-Agent': get_cfg('SESSION.USER_AGENT')},
             subprotocols=['glowforge'],
@@ -56,7 +65,6 @@ class WsClient(Thread):
             on_error=self._on_error,
             on_close=self._on_close,
         )
-        Thread.__init__(self)
 
     def _on_open(self, _ws) -> None:
         """WS handshake complete - ready to send/receive."""
@@ -85,15 +93,44 @@ class WsClient(Thread):
     def run(self) -> None:
         """
         Thread loop.
-        Starts the transmit pump, then runs the WebSocket event loop, reconnecting
-        automatically until stop is requested.
+        Starts the transmit pump, then connects and reconnects until stop is
+        requested. The ws_token is single-use and short-lived (~30s), so with
+        a session each reconnect re-runs sign_in for a fresh token (and
+        auth_token) and rebuilds the URL; without one, reconnects reuse the
+        existing token.
         :return:
         """
         Thread(target=self._tx_pump, daemon=True).start()
-        # reconnect: auto-retry the connection every 5s (the service drops it frequently).
-        # ping_interval: keep the connection alive (the service speaks standard WS ping/pong).
-        self.ws.run_forever(reconnect=5, ping_interval=30, ping_timeout=10)
+        first = True
+        while not self.stop:
+            if not first and self._session is not None:
+                # Lazy import: authentication imports this module.
+                from gfutilities.service.authentication import authenticate_machine
+                logger.info('re-authenticating for a fresh ws_token')
+                if not authenticate_machine(self._session):
+                    logger.error('re-auth failed; will retry')
+                    if self._sleep_or_stop(5):
+                        break
+                    continue
+            first = False
+            self.ready = False
+            self.ws = self._build()
+            # ping_interval keeps the connection alive (standard WS ping/pong).
+            self.ws.run_forever(ping_interval=30, ping_timeout=10)
+            if self.stop:
+                break
+            logger.info('RECONNECTING')
+            if self._sleep_or_stop(5):
+                break
         logger.info('CLOSING')
+
+    def _sleep_or_stop(self, secs: float) -> bool:
+        """Sleep up to secs seconds, returning True as soon as stop is set."""
+        for _ in range(int(secs * 10)):
+            if self.stop:
+                return True
+            time.sleep(0.1)
+        return self.stop
 
     def _tx_pump(self) -> None:
         """
@@ -112,7 +149,8 @@ class WsClient(Thread):
                 self.msg_q_tx.task_done()
             else:
                 time.sleep(0.1)
-        self.ws.close()
+        if self.ws:
+            self.ws.close()
 
 
 def split_frame(message: str) -> list:
@@ -320,29 +358,48 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
             pos += 8
         size = len(puls_data[pos:])
         stat = decode_all_steps(puls_data[pos:])
-        # TODO: REMOVE THIS TEMP RAW WRITE - ONLY FOR QUICK TESTING
-        base_file_name = '%s/%s' % (str(Path(get_cfg('LOGGING.FILE')).parent), time.strftime("%Y-%m-%d_%H%M%S"))
-        raw = open(base_file_name + '.puls', 'wb')
-        raw.write(puls_data)
-        f.write(puls_data[pos:])
-        for chunk in res:
-            if chunk:
-                size = size + len(chunk)
-                stat = decode_all_steps(chunk, stat)
-                f.write(chunk)
-                raw.write(chunk)
-        raw.close()
+        # Optional debug capture of the raw job, off by default (it copies
+        # every job into the log directory). Enable with LOGGING.SAVE_PULS.
+        save_puls = get_cfg('LOGGING.SAVE_PULS')
+        raw = None
+        base_file_name = None
+        if save_puls:
+            base_file_name = '%s/%s' % (str(Path(get_cfg('LOGGING.FILE')).parent),
+                                        time.strftime("%Y-%m-%d_%H%M%S"))
+            raw = open(base_file_name + '.puls', 'wb')
+            raw.write(puls_data)
+        try:
+            f.write(puls_data[pos:])
+            for chunk in res:
+                if chunk:
+                    size = size + len(chunk)
+                    stat = decode_all_steps(chunk, stat)
+                    f.write(chunk)
+                    if raw:
+                        raw.write(chunk)
+        except OSError as e:
+            # The pulse device rejects a write once its ring is full (-ENOMEM),
+            # i.e. the job is larger than the device can buffer. Log a clear
+            # reason and re-raise so the caller safes the machine, rather than
+            # surfacing a bare OSError. (Streaming-during-run to lift the ring
+            # cap is a separate, hardware-coupled change.)
+            logger.error('pulse write failed after %d bytes - the job may exceed '
+                         'the device ring capacity: %s' % (size, e))
+            raise
+        finally:
+            if raw:
+                raw.close()
         info['size'] = size
         info['run_time'] = timedelta(seconds=size / info['header_data']['STfr'])
         info['stats'] = stat
-        raw = open(base_file_name + '.info', 'w')
-        raw.write(json.dumps(info, sort_keys=True, indent=4, default=str) + '\n')
-        raw.close()
+        if save_puls:
+            with open(base_file_name + '.info', 'w') as jf:
+                jf.write(json.dumps(info, sort_keys=True, indent=4, default=str) + '\n')
         return info
 
 
-def request(s: Session, url: str, method: str, timeout: int = 15, stream: bool = False, **kwargs) \
-        -> Union[Response, bool]:
+def request(s: Session, url: str, method: str, timeout: int = 15, stream: bool = False,
+            _retry_auth: bool = True, **kwargs) -> Union[Response, bool]:
     """
     Submits requests to provided url using the established Session object
     :param s: Requests Session object
@@ -355,18 +412,28 @@ def request(s: Session, url: str, method: str, timeout: int = 15, stream: bool =
     :type timeout: int
     :param stream: Stream
     :type stream: bool
+    :param _retry_auth: on a 401, re-sign-in and replay the request once.
+        The sign-in request itself passes False to avoid recursion.
+    :type _retry_auth: bool
     :param kwargs:
     :return: Requests Response object, or False on error.
     :rtype: Union[Response, bool]
     """
     req = Request(method, str.replace(str(url), 'wss://', 'https://'), **kwargs)
-    req = s.prepare_request(req)
-    r = s.send(req, stream=stream, timeout=timeout)
+    prepared = s.prepare_request(req)
+    r = s.send(prepared, stream=stream, timeout=timeout)
+    if r.status_code == 401 and _retry_auth:
+        # The auth_token expired mid-session: re-sign-in (fresh Bearer) and
+        # replay the request once. Lazy import - authentication imports us.
+        logger.info('401 - re-authenticating and retrying')
+        from gfutilities.service.authentication import authenticate_machine
+        if authenticate_machine(s):
+            return request(s, url, method, timeout=timeout, stream=stream,
+                           _retry_auth=False, **kwargs)
     if r.status_code != 200:
         logger.error('FAILED: ' + r.reason)
         return False
-    else:
-        return r
+    return r
 
 
 def send_wss_event(msg_q_tx: Queue, action_id: Union[int, None], event: str, **kwargs):
@@ -403,18 +470,21 @@ def update_header(s: Session, header: str, value: str) -> bool:
     return True
 
 
-def ws_connect(msg_q_rx: Queue, msg_q_tx: Queue) -> bool:
+def ws_connect(msg_q_rx: Queue, msg_q_tx: Queue, session: Session = None) -> bool:
     """
     Establishes Web Socket Session
     :param msg_q_rx: WSS RX essage Queue
     :type msg_q_rx: Queue
     :param msg_q_tx: WSS TX Message Queue
     :type msg_q_tx: Queue
+    :param session: authenticated Session used to refresh the single-use
+        ws_token on reconnect (see WsClient); None keeps a single-connect client
+    :type session: Session
     :return: Web Socket session object
     :rtype: WebSocket
     """
     logger.info('CONNECTING')
-    ws = WsClient(msg_q_rx, msg_q_tx)
+    ws = WsClient(msg_q_rx, msg_q_tx, session)
     ws.start()
     ws_ready = False
     # Wait 15 seconds for session to establish, or error out

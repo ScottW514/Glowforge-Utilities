@@ -41,6 +41,7 @@ def authenticate_machine(s: Session) -> bool:
     s.mount("https://", adapter)
 
     r = request(s, get_cfg('SERVICE.SERVER_URL') + '/machines/sign_in', 'POST',
+                _retry_auth=False,
                 data={'serial': 'S' + str(get_cfg('MACHINE.SERIAL')), 'password': get_cfg('MACHINE.PASSWORD')})
     if r:
         rj = r.json()

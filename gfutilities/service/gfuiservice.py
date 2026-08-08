@@ -53,8 +53,9 @@ class GFUIService:
         # the operator (see run_update_check / record_factory_latest).
         if get_cfg('FACTORY_FIRMWARE.CHECK'):
             firmware_check(self.session)
-        # Establish WebSocket Connection
-        if not ws_connect(self.q_msg_rx, self.q_msg_tx):
+        # Establish WebSocket Connection. Pass the session so the client can
+        # re-sign-in for a fresh single-use ws_token on every reconnect.
+        if not ws_connect(self.q_msg_rx, self.q_msg_tx, self.session):
             return False
         return True
 
