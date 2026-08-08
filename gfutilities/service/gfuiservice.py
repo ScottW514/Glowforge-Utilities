@@ -7,7 +7,7 @@ SPDX-License-Identifier:    MIT
 """
 import logging
 import json
-from queue import Queue
+from queue import Queue, Empty
 
 from gfutilities._common import *
 from gfutilities.configuration import *
@@ -34,7 +34,13 @@ class GFUIService:
         self.q_msg_tx = Queue()
         self.q_capture = Queue()
         self._machine = machine
+        self.stop = False
         logger.info('INITIALIZED')
+
+    def request_stop(self) -> None:
+        """Ask run() to exit at the next loop turn (e.g. from a SIGTERM
+        handler). run() then shuts the machine down and safes the hardware."""
+        self.stop = True
 
     def connect(self) -> bool:
         """
@@ -65,9 +71,11 @@ class GFUIService:
         :return:
         """
         self._machine.start(self.session, self.q_msg_tx)
-        while True:
+        while not self.stop:
             try:
-                raw = self.q_msg_rx.get()
+                raw = self.q_msg_rx.get(timeout=0.5)
+            except Empty:
+                continue
             except KeyboardInterrupt:
                 break
             try:
