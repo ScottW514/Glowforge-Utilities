@@ -52,7 +52,9 @@ class WsClient(Thread):
         self.ready = False
         self._session = session
         self.ws = None
-        Thread.__init__(self)
+        # daemon: the client must never keep the process alive on its own.
+        # Clean teardown is still explicit - see shutdown().
+        Thread.__init__(self, daemon=True)
 
     def _build(self) -> 'websocket.WebSocketApp':
         """Build a WebSocketApp for the ws_token currently in config."""
@@ -123,6 +125,26 @@ class WsClient(Thread):
             if self._sleep_or_stop(5):
                 break
         logger.info('CLOSING')
+
+    def shutdown(self, timeout: float = 10) -> bool:
+        """
+        Stop the client and wait for its thread to exit: request the
+        receive/transmit loops to stop, close any open socket so
+        run_forever() returns immediately, and join the thread.
+        :param timeout: max seconds to wait for the thread
+        :type timeout: float
+        :return: True when the thread is down
+        :rtype: bool
+        """
+        self.stop = True
+        if self.ws:
+            try:
+                self.ws.close()
+            except Exception as e:
+                logger.debug('socket close during shutdown: %s' % e)
+        if self.is_alive():
+            self.join(timeout)
+        return not self.is_alive()
 
     def _sleep_or_stop(self, secs: float) -> bool:
         """Sleep up to secs seconds, returning True as soon as stop is set."""
@@ -470,9 +492,11 @@ def update_header(s: Session, header: str, value: str) -> bool:
     return True
 
 
-def ws_connect(msg_q_rx: Queue, msg_q_tx: Queue, session: Session = None) -> bool:
+def ws_connect(msg_q_rx: Queue, msg_q_tx: Queue, session: Session = None) -> Union['WsClient', bool]:
     """
-    Establishes Web Socket Session
+    Establishes Web Socket Session.
+    Returns the running client so the caller can stop it cleanly
+    (WsClient.shutdown) when the session ends.
     :param msg_q_rx: WSS RX essage Queue
     :type msg_q_rx: Queue
     :param msg_q_tx: WSS TX Message Queue
@@ -480,8 +504,8 @@ def ws_connect(msg_q_rx: Queue, msg_q_tx: Queue, session: Session = None) -> boo
     :param session: authenticated Session used to refresh the single-use
         ws_token on reconnect (see WsClient); None keeps a single-connect client
     :type session: Session
-    :return: Web Socket session object
-    :rtype: WebSocket
+    :return: the connected WsClient, or False on failure
+    :rtype: Union[WsClient, bool]
     """
     logger.info('CONNECTING')
     ws = WsClient(msg_q_rx, msg_q_tx, session)
@@ -496,7 +520,7 @@ def ws_connect(msg_q_rx: Queue, msg_q_tx: Queue, session: Session = None) -> boo
             break
     if ws_ready:
         logger.info('ESTABLISHED')
-        return True
+        return ws
     else:
         logger.error('FAILED')
         ws.stop = True

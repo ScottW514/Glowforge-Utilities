@@ -7,6 +7,7 @@ SPDX-License-Identifier:    MIT
 """
 import logging
 import json
+import time
 from queue import Queue, Empty
 
 from gfutilities._common import *
@@ -34,6 +35,7 @@ class GFUIService:
         self.q_msg_tx = Queue()
         self.q_capture = Queue()
         self._machine = machine
+        self._ws = None
         self.stop = False
         logger.info('INITIALIZED')
 
@@ -61,8 +63,11 @@ class GFUIService:
             firmware_check(self.session)
         # Establish WebSocket Connection. Pass the session so the client can
         # re-sign-in for a fresh single-use ws_token on every reconnect.
-        if not ws_connect(self.q_msg_rx, self.q_msg_tx, self.session):
+        # Keep the client so run() can stop its thread when the session ends.
+        ws = ws_connect(self.q_msg_rx, self.q_msg_tx, self.session)
+        if not ws:
             return False
+        self._ws = ws
         return True
 
     def run(self) -> None:
@@ -92,3 +97,20 @@ class GFUIService:
                         msg.get('action_type'), msg.get('status'), result)
             self.q_msg_rx.task_done()
         self._machine.stop()
+        self._disconnect()
+
+    def _disconnect(self) -> None:
+        """
+        Flush any final queued events to the service, then stop the WS
+        client thread so nothing of the session outlives run().
+        :return:
+        """
+        if self._ws is None:
+            return
+        deadline = time.monotonic() + 2
+        while (self._ws.ready and not self.q_msg_tx.empty()
+               and time.monotonic() < deadline):
+            time.sleep(0.05)
+        if not self._ws.shutdown():
+            logger.warning('WS client thread did not exit cleanly')
+        self._ws = None

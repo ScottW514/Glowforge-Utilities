@@ -410,7 +410,11 @@ class _ActionThread(Thread):
         """
         self._machine = machine
         self._msg = msg
-        Thread.__init__(self)
+        # daemon: a blocked action (e.g. waiting on the button) must not
+        # keep the process alive after the service loop exits. Safe hardware
+        # state does not depend on this thread finishing - it is enforced by
+        # _action_cleanup and, on process exit, the kernel dead man's switch.
+        Thread.__init__(self, daemon=True)
 
     def run(self) -> None:
         logger.debug('action thread start')
