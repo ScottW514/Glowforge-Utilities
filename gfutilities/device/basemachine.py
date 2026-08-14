@@ -357,7 +357,12 @@ class BaseMachine:
         """
         if self._ok_to_run_action(msg['id'], msg['action_type'], msg['status']):
             send_report(self._q_msg_tx, msg)
-        self.running_action_id = None
+            # The report is synchronous, so release the claim it just
+            # took - inside the accepted branch only: a rejected request
+            # (e.g. settings during a print) must not wipe the RUNNING
+            # action's id, or a later cancel of that action is dropped.
+            self.running_action_id = None
+            self.running_action_type = None
 
     def _shutdown(self) -> None:
         """
