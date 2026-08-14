@@ -45,7 +45,9 @@ def authenticate_machine(s: Session) -> bool:
                 data={'serial': 'S' + str(get_cfg('MACHINE.SERIAL')), 'password': get_cfg('MACHINE.PASSWORD')})
     if r:
         rj = r.json()
-        logger.debug(rj)
+        # Never log the response body: it carries the bearer auth_token and
+        # the single-use ws_token verbatim.
+        logger.debug('sign-in response received (keys: %s)' % sorted(rj.keys()))
         set_cfg('SESSION.WS_TOKEN', rj['ws_token'])
         set_cfg('SESSION.AUTH_TOKEN', rj['auth_token'])
         update_header(s, 'Authorization', "Bearer %s" % get_cfg('SESSION.AUTH_TOKEN'))

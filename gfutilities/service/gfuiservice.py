@@ -76,28 +76,52 @@ class GFUIService:
         :return:
         """
         self._machine.start(self.session, self.q_msg_tx)
-        while not self.stop:
-            try:
-                raw = self.q_msg_rx.get(timeout=0.5)
-            except Empty:
-                continue
-            except KeyboardInterrupt:
-                break
-            try:
-                msg = json.loads(raw)
-            except (ValueError, TypeError):
-                logger.warning('unparseable service message: %r',
-                               raw[:200] if isinstance(raw, str) else raw)
+        try:
+            while not self.stop:
+                # A dead WS client thread means no more frames can ever
+                # arrive: return so the outer connect loop reconnects
+                # instead of blocking on an empty queue forever.
+                if self._ws is not None and not self._ws.is_alive():
+                    logger.error('WS client thread died; reconnecting')
+                    break
+                try:
+                    raw = self.q_msg_rx.get(timeout=0.5)
+                except Empty:
+                    continue
+                except KeyboardInterrupt:
+                    break
+                try:
+                    msg = json.loads(raw)
+                except (ValueError, TypeError):
+                    logger.warning('unparseable service message: %r',
+                                   raw[:200] if isinstance(raw, str) else raw)
+                    self.q_msg_rx.task_done()
+                    continue
+                if not isinstance(msg, dict):
+                    logger.warning('non-object service message: %r', msg)
+                    self.q_msg_rx.task_done()
+                    continue
+                logger.info('service action request: %s (%s)',
+                            msg.get('action_type'), msg.get('status'))
+                # One malformed or unexpected frame must never take down
+                # the service loop mid-print: the action threads keep the
+                # running job supervised, and the next frame is processed
+                # normally.
+                try:
+                    result = dispatch_action(self._machine, msg,
+                                             allow_print=True)
+                except Exception:
+                    logger.exception('action dispatch failed; continuing')
+                    result = False
+                logger.info('%s (%s) service action %s',
+                            msg.get('action_type'), msg.get('status'), result)
                 self.q_msg_rx.task_done()
-                continue
-            logger.info('service action request: %s (%s)',
-                        msg.get('action_type'), msg.get('status'))
-            result = dispatch_action(self._machine, msg, allow_print=True)
-            logger.info('%s (%s) service action %s',
-                        msg.get('action_type'), msg.get('status'), result)
-            self.q_msg_rx.task_done()
-        self._machine.stop()
-        self._disconnect()
+        finally:
+            # Shut down safe even when the loop dies on an unexpected
+            # error: machine.stop() stops motion, locks the latch, and
+            # files the final idle report.
+            self._machine.stop()
+            self._disconnect()
 
     def _disconnect(self) -> None:
         """

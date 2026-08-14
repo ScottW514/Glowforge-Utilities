@@ -263,7 +263,7 @@ Glowforge-Utilities/
 |---|---|
 | `GFUIService` ([service/gfuiservice.py](gfutilities/service/gfuiservice.py)) | Top-level connector: authenticates, checks firmware, opens the WSS channel, and runs the action-dispatch loop. |
 | `authenticate_machine` ([service/authentication.py](gfutilities/service/authentication.py)) | Signs the machine in over HTTPS (with retry/back-off) and stores the auth/WS tokens. |
-| `WsClient` + helpers ([service/websocket.py](gfutilities/service/websocket.py)) | `websocket-client` control channel plus HTTP helpers: `firmware_check`/`firmware_download`, `img_upload`, `load_motion`, `send_wss_event`. |
+| `WsClient` + helpers ([service/websocket.py](gfutilities/service/websocket.py)) | `websocket-client` control channel plus HTTP helpers: `firmware_check` (version probe only — factory firmware is never downloaded), `img_upload`, `load_motion`, `send_wss_event`. |
 | `BaseMachine` ([device/basemachine.py](gfutilities/device/basemachine.py)) | Abstract base implementing the action lifecycle and threading; concrete machines override the `_initialize`, `_head_image`, `_lid_image`, `_hunt`, `_motion`, `_button_wait`, and `_shutdown` hooks. |
 | `Emulator` ([device/emulator.py](gfutilities/device/emulator.py)) | The reference `BaseMachine` implementation used by the example. |
 | `settings` ([device/settings.py](gfutilities/device/settings.py)) | `MACHINE_SETTINGS` schema and the `send_report` settings-report builder. |

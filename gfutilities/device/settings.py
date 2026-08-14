@@ -31,7 +31,7 @@ MACHINE_SETTINGS = {
     "AAin": MachineSetting(int, True, None, None, 0),  # AirAssist
     "AAix": MachineSetting(int, True, None, None, 0),  # AirAssist
     "AAli": MachineSetting(int, True, None, None, 1000),  # AirAssist
-    "AArd": MachineSetting(int, True, None, None, 0),  # AirAssist
+    "AArd": MachineSetting(int, True, 0, 1023, 0),  # AirAssist
     "AArl": MachineSetting(int, True, None, None, 1000),  # AirAssist
     "AArn": MachineSetting(int, True, None, None, 0),  # AirAssist
     "AArx": MachineSetting(int, True, None, None, 0),  # AirAssist
@@ -556,21 +556,21 @@ MACHINE_SETTINGS = {
     "WTva": MachineSetting(int, True, None, None, 754),  # Water Temp
     "WTvb": MachineSetting(int, True, None, None, 751),  # Water Temp
     "XScc": MachineSetting(int, True, None, None, 33),  # Current X Step
-    "XSdm": MachineSetting(int, True, None, None, 1),  # Decay Mode X Step
-    "XShc": MachineSetting(int, True, None, None, 33),  # Current X Step
-    "XSmm": MachineSetting(int, True, None, None, 1),  # Microstepping Mode X Step
-    "XSrc": MachineSetting(int, True, None, None, 0),  # Current X Step
+    "XSdm": MachineSetting(int, True, 0, 2, 1),  # Decay Mode X Step
+    "XShc": MachineSetting(int, True, 0, 1023, 33),  # Current X Step
+    "XSmm": MachineSetting(int, True, 1, 32, 1),  # Microstepping Mode X Step
+    "XSrc": MachineSetting(int, True, 0, 1023, 0),  # Current X Step
     "YScc": MachineSetting(int, True, None, None, 5),  # Current Y Step
-    "YSdm": MachineSetting(int, True, None, None, 1),  # Decay Mode Y Step
-    "YShc": MachineSetting(int, True, None, None, 5),  # Current Y Step
-    "YSmm": MachineSetting(int, True, None, None, 1),  # Microstepping Mode Y Step
-    "YSrc": MachineSetting(int, True, None, None, 0),  # Current Y Step
+    "YSdm": MachineSetting(int, True, 0, 2, 1),  # Decay Mode Y Step
+    "YShc": MachineSetting(int, True, 0, 1023, 5),  # Current Y Step
+    "YSmm": MachineSetting(int, True, 1, 32, 1),  # Microstepping Mode Y Step
+    "YSrc": MachineSetting(int, True, 0, 1023, 0),  # Current Y Step
     "ZHin": MachineSetting(int, True, None, None, 180),  # Homing Step Interval MachineSetting(ms) Z Step
     "ZScc": MachineSetting(int, True, None, None, 1),  # Current Z Step
     "ZSen": MachineSetting(int, True, 0, 1, 0),  # Enable Z Step
     "ZShc": MachineSetting(int, True, None, None, 1),  # Current Z Step
     "ZShs": MachineSetting(int, True, None, None, 0),  # Z Step: home speed
-    "ZSmd": MachineSetting(int, True, None, None, 1),  # Microstepping Mode Z Step
+    "ZSmd": MachineSetting(int, True, 0, 1, 1),  # Microstepping Mode Z Step
     "ZSrc": MachineSetting(int, True, None, None, 0),  # Current Z Step
     "ZStp": MachineSetting(int, True, None, None, 0),  # Z Step: (unconfirmed)
 }
@@ -637,7 +637,11 @@ def send_report(q: Queue, msg: dict) -> None:
     # The service appears to bypass the homing process if we send it an empty settings value.
     # It is assumed that this prevents the machine from re-homing every time it loses and regains
     # the connection to the Glowforge service (a seemingly frequent occurrence).
-    if not get_cfg('SETTINGS.SET') and not get_cfg('EMULATOR.BYPASS_HOMING'):
+    # BYPASS_HOMING is honored only when the running machine IS the emulator
+    # (EMULATOR.ACTIVE is set from code, not config): a real machine's config
+    # carrying the key must not skip service homing.
+    if not get_cfg('SETTINGS.SET') and not (get_cfg('EMULATOR.ACTIVE')
+                                            and get_cfg('EMULATOR.BYPASS_HOMING')):
         send_wss_event(q, msg['id'], 'settings:completed',
                        data={'key': 'settings', 'value': '{"values":{%s}}' % settings[:-1]})
         set_cfg('SETTINGS.SET', True)

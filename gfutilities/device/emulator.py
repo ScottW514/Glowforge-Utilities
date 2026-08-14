@@ -10,7 +10,7 @@ import logging
 import time
 
 from gfutilities._common import *
-from gfutilities.configuration import get_cfg
+from gfutilities.configuration import get_cfg, set_cfg
 from gfutilities.device.basemachine import BaseMachine
 from gfutilities.service.websocket import load_motion, img_upload, send_wss_event
 
@@ -27,6 +27,10 @@ class Emulator(BaseMachine):
         Initialize object
         """
         BaseMachine.__init__(self)
+        # Code-set marker: emulator-only behaviors (e.g. BYPASS_HOMING)
+        # key on this, never on a raw config line a real machine's config
+        # could carry.
+        set_cfg('EMULATOR.ACTIVE', True)
         # Track which step in the homing process we are at.
         # Example script has 5 saved head images, which are uploaded to the service in sequence to
         # emulate the homing process.  Files are located in _RESOURCES/IMG

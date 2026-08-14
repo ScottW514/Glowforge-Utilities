@@ -37,7 +37,7 @@ class BaseMachine:
         # Per-shot camera settings the service attaches to the current image
         # action (canonical source for the image handlers; see _image_settings).
         self._action_settings: dict = {}
-        self._session: Session = Union[Queue, None]
+        self._session: Union[Session, None] = None
 
         set_cfg('FACTORY_FIRMWARE.FW_VERSION', get_machine_setting('MCov'), True)
         set_cfg('FACTORY_FIRMWARE.APP_VERSION', get_machine_setting('MCdv'), True)
@@ -319,6 +319,30 @@ class BaseMachine:
         """
         raise NotImplementedError
 
+    def _start_action(self, msg: dict) -> None:
+        """
+        Start the accepted action's thread. The previous thread can still be
+        in its final instants after releasing its claim; wait it out rather
+        than dropping an accepted action on the floor - a dropped action has
+        no thread and no terminal event, and its claim would reject every
+        action after it forever.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        if self._action_thread.is_alive():
+            self._action_thread.join(timeout=5)
+        if self._action_thread.is_alive():
+            logger.error('previous action thread did not exit; failing %s'
+                         % msg.get('action_type'))
+            send_wss_event(self._q_msg_tx, msg.get('id'),
+                           '%s:failed' % msg.get('action_type'))
+            self.running_action_id = None
+            self.running_action_type = None
+            return
+        self._action_thread = _ActionThread(self, msg)
+        self._action_thread.start()
+
     def run_capture(self, msg: dict) -> None:
         """
         Process capture request.
@@ -329,9 +353,7 @@ class BaseMachine:
         :return:
         """
         if self._ok_to_run_action(msg['id'], msg['action_type'], msg['status']):
-            if not self._action_thread.is_alive():
-                self._action_thread = _ActionThread(self, msg)
-                self._action_thread.start()
+            self._start_action(msg)
 
     def run_puls(self, msg: dict) -> None:
         """
@@ -343,9 +365,7 @@ class BaseMachine:
         :return:
         """
         if self._ok_to_run_action(msg['id'], msg['action_type'], msg['status']):
-            if not self._action_thread.is_alive():
-                self._action_thread = _ActionThread(self, msg)
-                self._action_thread.start()
+            self._start_action(msg)
 
     def run_settings_report(self, msg: dict) -> None:
         """
@@ -441,6 +461,13 @@ class _ActionThread(Thread):
             # an exception mid-print would leave the action registered as
             # running and the laser latch unlocked.
             logger.exception('action %s crashed' % self._msg.get('action_type'))
+            # The service is waiting on this action: a terminal event lets
+            # it resolve instead of hanging on it forever.
+            try:
+                send_wss_event(self._machine._q_msg_tx, self._msg.get('id'),
+                               '%s:failed' % self._msg.get('action_type'))
+            except Exception:
+                logger.exception('could not report the action failure')
         finally:
             try:
                 self._machine._action_cleanup()

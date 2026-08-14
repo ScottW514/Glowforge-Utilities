@@ -12,7 +12,7 @@ from pathlib import Path
 from queue import Queue
 import requests
 from requests import Request, Response, Session
-from threading import Thread
+from threading import Lock, Thread
 import time
 from typing import Union
 
@@ -24,6 +24,12 @@ from gfutilities.puls import decode_all_steps
 
 start_time = time.time()
 response_id = 31
+_response_id_lock = Lock()
+
+# Events queued while the socket is down are stale on reconnect; past this
+# depth new events are dropped (with a warning) instead of growing the
+# queue without bound.
+TX_QUEUE_MAX = 1000
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -105,20 +111,27 @@ class WsClient(Thread):
         Thread(target=self._tx_pump, daemon=True).start()
         first = True
         while not self.stop:
-            if not first and self._session is not None:
-                # Lazy import: authentication imports this module.
-                from gfutilities.service.authentication import authenticate_machine
-                logger.info('re-authenticating for a fresh ws_token')
-                if not authenticate_machine(self._session):
-                    logger.error('re-auth failed; will retry')
-                    if self._sleep_or_stop(5):
-                        break
-                    continue
-            first = False
-            self.ready = False
-            self.ws = self._build()
-            # ping_interval keeps the connection alive (standard WS ping/pong).
-            self.ws.run_forever(ping_interval=30, ping_timeout=10)
+            # A transient failure anywhere in a session attempt (DNS blip
+            # during re-auth, a raise out of run_forever) must not kill
+            # this thread - the machine would silently go offline forever.
+            # Log, back off, reconnect.
+            try:
+                if not first and self._session is not None:
+                    # Lazy import: authentication imports this module.
+                    from gfutilities.service.authentication import authenticate_machine
+                    logger.info('re-authenticating for a fresh ws_token')
+                    if not authenticate_machine(self._session):
+                        logger.error('re-auth failed; will retry')
+                        if self._sleep_or_stop(5):
+                            break
+                        continue
+                first = False
+                self.ready = False
+                self.ws = self._build()
+                # ping_interval keeps the connection alive (standard WS ping/pong).
+                self.ws.run_forever(ping_interval=30, ping_timeout=10)
+            except Exception:
+                logger.exception('WS session attempt failed; will reconnect')
             if self.stop:
                 break
             logger.info('RECONNECTING')
@@ -259,28 +272,6 @@ def firmware_check(s: Session) -> Union[dict, bool]:
         return False
 
 
-def firmware_download(s: Session, fw: dict) -> bool:
-    """
-    Downloads latest firmware to directory set in config.
-    :param s: Requests Session object
-    :type s: Session
-    :param fw: Dictionary returned by _api_firmware_check()
-    :type fw: dict
-    :return: {bool} True
-    :rtype: bool
-    """
-    logger.info('DOWNLOADING')
-    Path(get_cfg('FACTORY_FIRMWARE.DOWNLOAD_DIR')).mkdir(parents=True, exist_ok=True)
-    r = request(s, fw['download_url'], 'GET', stream=True)
-
-    with open('%s/glowforge-fw-v%s.fw' % (get_cfg('FACTORY_FIRMWARE.DOWNLOAD_DIR'), fw['version']), 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-    logger.info('COMPLETE.')
-    return True
-
-
 def get_session() -> Session:
     """
     Creates web api session object.
@@ -378,6 +369,13 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
         while pos < total_header:
             info['header_data'][puls_data[pos:pos + 4].decode()] = _byte_to_int(puls_data[pos + 4:pos + 8])
             pos += 8
+        # Validate everything the run-time math depends on BEFORE the first
+        # byte reaches the ring: a raise past this point would leave a whole
+        # job loaded with nobody to run it.
+        stfr = info['header_data'].get('STfr')
+        if not isinstance(stfr, int) or stfr <= 0:
+            logger.error('puls header has no usable STfr (%r); refusing the job' % (stfr,))
+            return False
         size = len(puls_data[pos:])
         stat = decode_all_steps(puls_data[pos:])
         # Optional debug capture of the raw job, off by default (it copies
@@ -412,7 +410,7 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
             if raw:
                 raw.close()
         info['size'] = size
-        info['run_time'] = timedelta(seconds=size / info['header_data']['STfr'])
+        info['run_time'] = timedelta(seconds=size / stfr)
         info['stats'] = stat
         if save_puls:
             with open(base_file_name + '.info', 'w') as jf:
@@ -443,7 +441,14 @@ def request(s: Session, url: str, method: str, timeout: int = 15, stream: bool =
     """
     req = Request(method, str.replace(str(url), 'wss://', 'https://'), **kwargs)
     prepared = s.prepare_request(req)
-    r = s.send(prepared, stream=stream, timeout=timeout)
+    try:
+        r = s.send(prepared, stream=stream, timeout=timeout)
+    except requests.RequestException as e:
+        # Network trouble is a routine condition (DNS blip, uplink drop,
+        # timeout), not an exception to unwind a thread on: every caller
+        # already handles a False return as failure.
+        logger.error('request failed: %s' % e)
+        return False
     if r.status_code == 401 and _retry_auth:
         # The auth_token expired mid-session: re-sign-in (fresh Bearer) and
         # replay the request once. Lazy import - authentication imports us.
@@ -461,7 +466,13 @@ def request(s: Session, url: str, method: str, timeout: int = 15, stream: bool =
 def send_wss_event(msg_q_tx: Queue, action_id: Union[int, None], event: str, **kwargs):
     global response_id
     global start_time
-    response_id += 1
+    with _response_id_lock:      # called from several threads
+        response_id += 1
+        rid = response_id
+
+    if msg_q_tx.qsize() >= TX_QUEUE_MAX:
+        logger.warning('event TX queue full (socket down?); dropping %s' % event)
+        return
 
     if 'data' in kwargs:
         data = ',"%s":%s' % (kwargs['data']['key'], kwargs['data']['value'])
@@ -473,7 +484,7 @@ def send_wss_event(msg_q_tx: Queue, action_id: Union[int, None], event: str, **k
         action_id = '"action_id":%s,' % action_id
     msg_q_tx.put(u'{"id":%s,"timestamp":%s,"type":"event","version":1,'
                  u'%s"level":"INFO","event":"%s"%s}\n' %
-                 (response_id, int(((time.time() - start_time) * 100) + 3800), action_id, event, data))
+                 (rid, int(((time.time() - start_time) * 100) + 3800), action_id, event, data))
 
 
 def update_header(s: Session, header: str, value: str) -> bool:
