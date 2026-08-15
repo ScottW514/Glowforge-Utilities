@@ -162,7 +162,8 @@ supported within a section.
 | | `motion_dl_dir` | Where downloaded motion/pulse files are written. |
 | | `bypass_homing` | Experimental: start with the homing cycle skipped. |
 | | `material_thickness` | Selects which canned head image to return. |
-| `[LOGGING]` | `file`, `level`, `console_level` | Log file path and log levels. |
+| `[LOGGING]` | `file`, `level`, `console_level` | Log file path and log levels (the example's handlers). |
+| | `save_puls`, `save_sent_images`, `dir` | Optional debug captures of downloaded pulse files and uploaded images, written under `dir` (both off by default). |
 | `[THERMAL]`, `[MOTION]` | … | Additional tunables read from the config file. |
 
 ### Obtaining your machine credentials

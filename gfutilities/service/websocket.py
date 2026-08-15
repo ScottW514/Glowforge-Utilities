@@ -379,12 +379,13 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
         size = len(puls_data[pos:])
         stat = decode_all_steps(puls_data[pos:])
         # Optional debug capture of the raw job, off by default (it copies
-        # every job into the log directory). Enable with LOGGING.SAVE_PULS.
-        save_puls = get_cfg('LOGGING.SAVE_PULS')
+        # every job into the capture directory, LOGGING.DIR). Enable with
+        # LOGGING.SAVE_PULS.
+        save_puls = get_cfg('LOGGING.SAVE_PULS') and get_cfg('LOGGING.DIR')
         raw = None
         base_file_name = None
         if save_puls:
-            base_file_name = '%s/%s' % (str(Path(get_cfg('LOGGING.FILE')).parent),
+            base_file_name = '%s/%s' % (get_cfg('LOGGING.DIR'),
                                         time.strftime("%Y-%m-%d_%H%M%S"))
             raw = open(base_file_name + '.puls', 'wb')
             raw.write(puls_data)
