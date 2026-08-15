@@ -105,10 +105,18 @@ ENV/
 # We don't want anyone accidently uploading their machine credentials!
 gf-machine-emulator.cfg
 
-# We can do without having anyone's FW, LOG or MOTION files
-examples/_RESOURCES/FW/
-examples/_RESOURCES/LOG/
-examples/_RESOURCES/MOTION/
+# The emulator downloads firmware, logs and pulse files into these
+# directories; only the committed fixtures (see examples/_RESOURCES/README.md)
+# and the placeholder READMEs belong in the repository.
+examples/_RESOURCES/FW/*
+!examples/_RESOURCES/FW/README.md
+examples/_RESOURCES/LOG/*
+!examples/_RESOURCES/LOG/README.md
+examples/_RESOURCES/MOTION/*
+!examples/_RESOURCES/MOTION/README.md
+!examples/_RESOURCES/MOTION/1234567890-nooptions-xxxxx.puls
+!examples/_RESOURCES/MOTION/hunt-signed-offset--8-step-size-0.35306.puls
+!examples/_RESOURCES/MOTION/motions_xxxxx.puls
 
 # Keep PyCharm users (ScottW, for one) from sharing their IDE settings with everyone.
 .idea/

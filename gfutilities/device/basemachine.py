@@ -283,7 +283,7 @@ class BaseMachine:
         command must never wipe a ForgeFIRM machine, so this logs the refusal
         and reports the action cancelled.
         Interface for the action dispatch.
-        TODO(Phase E): confirm the exact acknowledgement the 2.6.0 app
+        TODO: confirm the exact acknowledgment the 2.6.0 app
         expects for a declined factory_reset.
         :param msg: Incoming WSS Message
         :type msg: dict

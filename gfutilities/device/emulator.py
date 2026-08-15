@@ -7,6 +7,7 @@ SPDX-License-Identifier:    MIT
 """
 import json
 import logging
+import os
 import time
 
 from gfutilities._common import *
@@ -38,9 +39,10 @@ class Emulator(BaseMachine):
         #             This image was taken with the head already in the calibrated position to speed up the process.
         # HOME_2.jpg: Image after first retreat move
         # HOME_3.jpg: Image after second retreat move
-        # HOME_4.jpg: Image after third retreat move
-        # LID_IMAGE.jpg: Image of bed with Proofgrade(tm) material
-        #                This image is sent for every none-homing lid_image request
+        # HOME_4.jpg: Image after third retreat move; also the bed image
+        #             (Proofgrade(tm) material in place) sent for every
+        #             non-homing lid_image request unless the image directory
+        #             holds a LID_IMAGE.jpg
         self._homing_stage = 0 if get_cfg('EMULATOR.BYPASS_HOMING') else 1
         # Used to track the action just before a lid_image request. This is used to detect homing operations after
         # the initial start up (after a print job, for instance)
@@ -98,6 +100,8 @@ class Emulator(BaseMachine):
             self._homing_stage = self._homing_stage + 1 if self._homing_stage < 4 else 0
         else:
             img = 'LID_IMAGE.jpg'
+            if not os.path.isfile('%s/%s' % (get_cfg('EMULATOR.IMAGE_SRC_DIR'), img)):
+                img = 'HOME_4.jpg'
         self._capture_and_upload(msg, img)
         self._last_action = 'lid_image'
 

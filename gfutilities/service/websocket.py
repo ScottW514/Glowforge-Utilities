@@ -308,7 +308,7 @@ def img_upload(s: Session, img: bytes, msg: dict) -> bool:
         r = requests.put(endpoint, data=img, headers={'Content-Type': 'image/jpeg'}, timeout=30)
         ok = r.status_code in (200, 201, 204)
     else:
-        # Legacy fallback: POST to the app server (pre-2.6.0 behaviour).
+        # Legacy fallback: POST to the app server (pre-2.6.0 behavior).
         url = get_cfg('SERVICE.SERVER_URL') + '/api/machines/%s/%s' % (msg['action_type'], msg['id'])
         r = request(s, url, 'POST', data=img, headers={'Content-Type': 'image/jpeg'})
         ok = bool(r)

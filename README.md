@@ -158,7 +158,7 @@ supported within a section.
 | | `download_dir` | Where downloaded firmware is written. |
 | | `fw_version`, `app_version` | Optional reported-version overrides. |
 | `[EMULATOR]` | `base_dir` | Root for the emulator's resource folders. |
-| | `image_src_dir` | Canned camera images (`HOME_*.jpg`, `LID_IMAGE.jpg`, …). |
+| | `image_src_dir` | Canned camera images (`HOME_1..4.jpg`, `HEAD_*.jpg`; an optional `LID_IMAGE.jpg` overrides `HOME_4.jpg` as the plain bed image). |
 | | `motion_dl_dir` | Where downloaded motion/pulse files are written. |
 | | `bypass_homing` | Experimental: start with the homing cycle skipped. |
 | | `material_thickness` | Selects which canned head image to return. |
