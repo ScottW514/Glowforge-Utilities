@@ -128,3 +128,4 @@ dev/
 # The package test suite is tracked (the rule above is for scratch scripts).
 !tests/
 !tests/**
+tests/__pycache__/
