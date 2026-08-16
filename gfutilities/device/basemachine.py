@@ -170,7 +170,10 @@ class BaseMachine:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'hunt:starting')
         self._hunt(msg)
-        send_wss_event(self._q_msg_tx, msg['id'], 'hunt:completed')
+        if self._running_action_cancelled:
+            self._send_cancelled_message(msg['id'], 'hunt')
+        else:
+            send_wss_event(self._q_msg_tx, msg['id'], 'hunt:completed')
 
     def _hunt(self, msg: dict) -> None:
         """
