@@ -170,10 +170,7 @@ class BaseMachine:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'hunt:starting')
         self._hunt(msg)
-        if self._running_action_cancelled:
-            self._send_cancelled_message(msg['id'], 'hunt')
-        else:
-            send_wss_event(self._q_msg_tx, msg['id'], 'hunt:completed')
+        self._finish_action(msg['id'], 'hunt')
 
     def _hunt(self, msg: dict) -> None:
         """
@@ -306,10 +303,17 @@ class BaseMachine:
         """
         send_wss_event(self._q_msg_tx, msg['id'], msg['action_type'] + ':starting')
         self._motion(msg)
-        if self._running_action_cancelled:
-            self._send_cancelled_message(msg['id'], msg['action_type'])
-        else:
-            send_wss_event(self._q_msg_tx, msg['id'], msg['action_type'] + ':completed')
+        self._finish_action(msg['id'], msg['action_type'])
+
+    def _finish_action(self, action_id: int, action_type: str) -> None:
+        """
+        Terminal event of a job: ':cancelled' when the run was cut short
+        (locally or by the service), else ':completed'. Logged, so the
+        machine log carries the same record as the wire.
+        """
+        event = 'cancelled' if self._running_action_cancelled else 'completed'
+        logger.info('%s [%s]: finished with event ":%s"' % (action_type, action_id, event))
+        send_wss_event(self._q_msg_tx, action_id, '%s:%s' % (action_type, event))
 
     def _motion(self, msg: dict) -> None:
         """
@@ -394,9 +398,6 @@ class BaseMachine:
         :return:
         """
         raise NotImplementedError
-
-    def _send_cancelled_message(self, action_id: int, action_type: str):
-        send_wss_event(self._q_msg_tx, action_id, '%s:cancelled' % action_type)
 
     def start(self, session: Session, msq_tx_q: Queue) -> None:
         """
