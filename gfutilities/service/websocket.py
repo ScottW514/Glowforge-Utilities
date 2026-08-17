@@ -387,8 +387,17 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
         if save_puls:
             base_file_name = '%s/%s' % (get_cfg('LOGGING.DIR'),
                                         time.strftime("%Y-%m-%d_%H%M%S"))
-            raw = open(base_file_name + '.puls', 'wb')
-            raw.write(puls_data)
+            try:
+                raw = open(base_file_name + '.puls', 'wb')
+                raw.write(puls_data)
+            except OSError as e:
+                # The capture is a debug aid and never costs a job: a missing
+                # directory or a full disk drops it and the print runs on.
+                logger.warning('pulse capture disabled: %s' % e)
+                if raw:
+                    raw.close()
+                raw = None
+                save_puls = False
         try:
             f.write(puls_data[pos:])
             for chunk in res:
@@ -397,7 +406,13 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
                     stat = decode_all_steps(chunk, stat)
                     f.write(chunk)
                     if raw:
-                        raw.write(chunk)
+                        try:
+                            raw.write(chunk)
+                        except OSError as e:
+                            logger.warning('pulse capture stopped: %s' % e)
+                            raw.close()
+                            raw = None
+                            save_puls = False
         except OSError as e:
             # The pulse device rejects a write once its ring is full (-ENOMEM),
             # i.e. the job is larger than the device can buffer. Log a clear
@@ -414,8 +429,12 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
         info['run_time'] = timedelta(seconds=size / stfr)
         info['stats'] = stat
         if save_puls:
-            with open(base_file_name + '.info', 'w') as jf:
-                jf.write(json.dumps(info, sort_keys=True, indent=4, default=str) + '\n')
+            try:
+                with open(base_file_name + '.info', 'w') as jf:
+                    jf.write(json.dumps(info, sort_keys=True, indent=4,
+                                        default=str) + '\n')
+            except OSError as e:
+                logger.warning('pulse capture info not written: %s' % e)
         return info
 
 

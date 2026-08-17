@@ -195,6 +195,22 @@ def test_load_motion_save_puls_flag_writes_debug_copy(tmp_path, monkeypatch):
     set_cfg('LOGGING.SAVE_PULS', None)
 
 
+def test_load_motion_capture_failure_does_not_fail_the_job(tmp_path, monkeypatch):
+    # Capture on, but the directory does not exist: the debug copy is
+    # dropped and the job still loads. A debug aid never costs a print.
+    set_cfg('LOGGING.DIR', str(tmp_path / 'gone'))
+    set_cfg('LOGGING.SAVE_PULS', True)
+    body = bytes(range(50))
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: _StreamResp(_fake_puls(body)))
+    out = BytesIO()
+    try:
+        info = ws.load_motion(None, 'http://x', out)
+    finally:
+        set_cfg('LOGGING.SAVE_PULS', None)
+    assert out.getvalue() == body
+    assert info['size'] == len(body)
+
+
 # ---- D1a: GFUIService stoppable --------------------------------------------
 
 class _FakeMachine:
