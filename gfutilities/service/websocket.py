@@ -14,7 +14,7 @@ import requests
 from requests import Request, Response, Session
 from threading import Lock, Thread
 import time
-from typing import Union
+from typing import Any, Union
 
 import websocket
 
@@ -320,6 +320,51 @@ def img_upload(s: Session, img: bytes, msg: dict) -> bool:
     return True
 
 
+def check_puls_header(header: dict, serial: Any = None) -> Union[str, None]:
+    """
+    Decide whether a pulse file may run on this machine.
+
+    Everything here is checked before a single byte reaches the kernel ring,
+    the way the factory checks it: a header that fails is a job that never
+    loads, not a job aborted halfway.
+
+    :param header: parsed pulse header, 4-character tags to integers
+    :param serial: this machine's serial number
+    :return: None when the header is acceptable, else the reason to refuse
+    :rtype: Union[str, None]
+    """
+    stfr = header.get('STfr')
+    if not isinstance(stfr, int) or stfr <= 0:
+        return 'no usable STfr (%r) to clock the step stream' % (stfr,)
+
+    # A job carries the serial of the machine it was cut for. Zero means the
+    # service did not lock it, which the factory accepts and this machine has
+    # only ever been sent; a nonzero value that is not ours is somebody else's
+    # job and their material. No serial is logged either way.
+    locked = header.get('MCsn')
+    if locked is None:
+        return 'header carries no MCsn, so the job is not addressed to a machine'
+    if locked:
+        try:
+            mine = int(serial)
+        except (TypeError, ValueError):
+            return 'header is serial-locked but this machine has no usable serial'
+        if mine != locked:
+            return 'header is serial-locked to a different machine'
+
+    # PDfm names the pulse-data format. Format 0 is the one the step decoder
+    # and the kernel ring assume, and the only one ever observed. What the
+    # factory would do with another value is not known from the firmware, so
+    # refusing beats misreading a byte stream that drives a laser.
+    fmt = header.get('PDfm')
+    if fmt is None:
+        return 'header carries no PDfm, so the pulse data format is undeclared'
+    if fmt != 0:
+        return 'unsupported pulse data format PDfm=%r' % (fmt,)
+
+    return None
+
+
 def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
     """
     Downloads motion/print file, parses header
@@ -372,10 +417,11 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
         # Validate everything the run-time math depends on BEFORE the first
         # byte reaches the ring: a raise past this point would leave a whole
         # job loaded with nobody to run it.
-        stfr = info['header_data'].get('STfr')
-        if not isinstance(stfr, int) or stfr <= 0:
-            logger.error('puls header has no usable STfr (%r); refusing the job' % (stfr,))
+        reason = check_puls_header(info['header_data'], get_cfg('MACHINE.SERIAL'))
+        if reason is not None:
+            logger.error('refusing the job: %s' % reason)
             return False
+        stfr = info['header_data']['STfr']
         size = len(puls_data[pos:])
         stat = decode_all_steps(puls_data[pos:])
         # Optional debug capture of the raw job, off by default (it copies

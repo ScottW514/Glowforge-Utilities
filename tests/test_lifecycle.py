@@ -154,8 +154,15 @@ def test_request_reauth_failure_gives_up(monkeypatch):
 # ---- C4: load_motion disk-filler + oversize handling -----------------------
 
 def _fake_puls(body: bytes) -> bytes:
-    # \x00 G F 1 | header_len(16, little-endian) | 'STfr' + 10000 | body
-    header = b'\x00GF1' + (16).to_bytes(4, 'little') + b'STfr' + (10000).to_bytes(4, 'little')
+    # \x00 G F 1 | header_len (little-endian) | tag/value pairs | body
+    #
+    # The three tags are the ones load_motion refuses a job without: the step
+    # frequency, the machine serial the job is locked to (0 = unlocked, which
+    # is what the live service sends) and the pulse-data format.
+    fields = (b'STfr' + (10000).to_bytes(4, 'little')
+              + b'MCsn' + (0).to_bytes(4, 'little')
+              + b'PDfm' + (0).to_bytes(4, 'little'))
+    header = b'\x00GF1' + (8 + len(fields)).to_bytes(4, 'little') + fields
     return header + body
 
 
