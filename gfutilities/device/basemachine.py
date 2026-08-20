@@ -201,16 +201,43 @@ class BaseMachine:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'lid_image:starting')
         self._action_settings = self._image_settings(msg)
-        self._lid_image(msg)
+        self._lid_image(msg, self._action_settings or None)
         send_wss_event(self._q_msg_tx, msg['id'], 'lid_image:completed')
 
-    def _lid_image(self, msg: dict) -> None:
+    @staticmethod
+    def lamp_level(settings: dict = None) -> int:
+        """
+        The lid lamp brightness for one capture, from the action's settings.
+
+        `LCfl` is the service's per-shot flash switch and it is the only key
+        that decides this: a captured 1.x session shows lid_image actions
+        arriving as {"LCfl": 1}. Zero means capture the bed as it is lit,
+        which is a request worth honoring rather than overriding. How bright
+        a flash is comes from `LLvl`, the lamp's own brightness setting, so
+        a service that changes the lamp changes the flash with it.
+
+        An action that says nothing about the flash gets one, which is what
+        every capture did before the key was honored at all.
+        :param settings: normalized per-action settings, or None
+        :type settings: dict
+        :return: lamp brightness, 0-255
+        :rtype: int
+        """
+        level = get_machine_setting('LLvl')
+        if settings and not settings.get('LCfl', 1):
+            return 0
+        return int(level if level is not None else 132)
+
+    def _lid_image(self, msg: dict, settings: dict = None) -> None:
         """
         Child class handler for lid image requests.
         To be implemented by the child class.
         This method should capture the image from the lid camera, and upload the resulting image to the Web API.
+        The lamp brightness for the shot is lamp_level(settings).
         :param msg: Incoming WSS Message
         :type msg: dict
+        :param settings: Camera settings
+        :type settings: dict
         :return:
         """
         raise NotImplementedError
@@ -239,10 +266,10 @@ class BaseMachine:
         """
         send_wss_event(self._q_msg_tx, msg['id'], 'user_image:starting')
         self._action_settings = self._image_settings(msg)
-        self._user_image(msg)
+        self._user_image(msg, self._action_settings or None)
         send_wss_event(self._q_msg_tx, msg['id'], 'user_image:completed')
 
-    def _user_image(self, msg: dict) -> None:
+    def _user_image(self, msg: dict, settings: dict = None) -> None:
         """
         Child class handler for a user-requested image: the bed (lid) view.
 
@@ -250,13 +277,14 @@ class BaseMachine:
         class with four vtables, and user_image differs from lid_image in
         nothing but its name: same camera (the lid one), same requirement
         that the lid be closed. head_image and lidar_image are the pair that
-        differ, on the head camera with no lid gate. Any settings the action
-        carried are in _action_settings for the capture path to honor.
+        differ, on the head camera with no lid gate.
         :param msg: Incoming WSS Message
         :type msg: dict
+        :param settings: Camera settings
+        :type settings: dict
         :return:
         """
-        self._lid_image(msg)
+        self._lid_image(msg, settings)
 
     def run_update_check(self, msg: dict) -> None:
         """

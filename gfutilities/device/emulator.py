@@ -90,7 +90,7 @@ class Emulator(BaseMachine):
     def _initialize(self) -> None:
         pass
 
-    def _lid_image(self, msg: dict) -> None:
+    def _lid_image(self, msg: dict, settings: dict = None) -> None:
         if self._homing_stage == 0 and self._last_action == 'motion':
             # Looks like were are homing again
             self._homing_stage = 1

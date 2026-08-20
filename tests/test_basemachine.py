@@ -17,6 +17,8 @@ class StubMachine(BaseMachine):
     def __init__(self):
         BaseMachine.__init__(self)
         self.lid_captured = 0
+        self.lid_lamps = []
+        self.lid_settings = 'unset'
         self.head_settings = 'unset'
         self._q_msg_tx = Queue()
 
@@ -29,8 +31,10 @@ class StubMachine(BaseMachine):
     def _button_wait(self, msg):
         pass
 
-    def _lid_image(self, msg):
+    def _lid_image(self, msg, settings=None):
         self.lid_captured += 1
+        self.lid_settings = settings
+        self.lid_lamps.append(self.lamp_level(settings))
 
     def _head_image(self, msg, settings=None):
         self.head_settings = settings
@@ -130,6 +134,50 @@ def test_head_image_without_settings_passes_none():
     m.run_capture({'action_type': 'head_image', 'id': 6, 'status': 'ready'})
     m._action_thread.join(timeout=5)
     assert m.head_settings is None
+
+
+def test_lid_image_receives_its_settings():
+    m = StubMachine()
+    m.run_capture({'action_type': 'lid_image', 'id': 10, 'status': 'ready',
+                   'settings': {'LCfl': 1}})
+    m._action_thread.join(timeout=5)
+    assert m.lid_settings == {'LCfl': 1}
+
+
+def test_a_user_image_carries_its_settings_to_the_lid_capture():
+    m = StubMachine()
+    m.run_capture({'action_type': 'user_image', 'id': 11, 'status': 'ready',
+                   'settings': {'LCfl': 0}})
+    m._action_thread.join(timeout=5)
+    assert m.lid_settings == {'LCfl': 0}
+    assert m.lid_lamps == [0]
+
+
+# ---- the lid lamp ---------------------------------------------------------
+
+def test_the_flash_is_on_when_the_action_asks_for_it():
+    assert BaseMachine.lamp_level({'LCfl': 1}) == 132
+
+
+def test_the_flash_is_off_when_the_action_says_so():
+    # LCfl 0 is a request to photograph the bed as it is lit.
+    assert BaseMachine.lamp_level({'LCfl': 0}) == 0
+
+
+def test_an_action_that_says_nothing_still_gets_a_flash():
+    # Every lid capture lit the lamp before the key was honored; an action
+    # with no opinion must not go dark.
+    assert BaseMachine.lamp_level(None) == 132
+    assert BaseMachine.lamp_level({}) == 132
+    assert BaseMachine.lamp_level({'HCil': 3}) == 132
+
+
+def test_the_flash_follows_the_lamps_own_brightness(monkeypatch):
+    # How bright a flash is comes from LLvl, so a service that moves the
+    # lamp moves the flash with it.
+    monkeypatch.setattr(basemachine, 'get_machine_setting', lambda k: 200)
+    assert BaseMachine.lamp_level({'LCfl': 1}) == 200
+    assert BaseMachine.lamp_level({'LCfl': 0}) == 0
 
 
 def test_lidar_image_uses_first_settings_entry():
