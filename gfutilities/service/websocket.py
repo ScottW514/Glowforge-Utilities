@@ -370,6 +370,16 @@ def check_puls_header(header: dict, serial: Any = None) -> Union[str, None]:
 _DOWNLOAD_CHUNK = 64 * 1024
 _WRITE_CHUNK = 256 * 1024
 
+# How much pulse body this machine will hold in memory. These bound PROCESS
+# MEMORY and nothing else: the body is the job as the service compressed it,
+# and the ring is fed from it as it drains, so job length is not what they
+# cap. The service compresses the step stream tens to one, so a couple of MB
+# is an hours-long print; the warning level is past anything that has been
+# seen, and the refusal level is past anything a machine could cut in days.
+# A caller passes 0 to lift either one.
+PULSE_WARN_BYTES = 32 * 1024 * 1024
+PULSE_REJECT_BYTES = 128 * 1024 * 1024
+
 
 def _body_stream(r, chunk: int = _DOWNLOAD_CHUNK):
     """The body exactly as the service sent it, in pieces.
@@ -385,7 +395,16 @@ def _body_stream(r, chunk: int = _DOWNLOAD_CHUNK):
     return r.iter_content(chunk_size=chunk)
 
 
-def fetch_motion(s: Session, url: str) -> tuple:
+def _declared_length(r) -> int:
+    """The body size the service declares, or 0 when it declares none."""
+    try:
+        return max(0, int(r.headers.get('content-length', 0)))
+    except (AttributeError, TypeError, ValueError):
+        return 0
+
+
+def fetch_motion(s: Session, url: str, warn_bytes: int = PULSE_WARN_BYTES,
+                 reject_bytes: int = PULSE_REJECT_BYTES) -> tuple:
     """Downloads a motion/print job into memory and parses its header.
 
     Returns ``(info, source)``, or ``(False, None)`` if the job is not one
@@ -393,16 +412,38 @@ def fetch_motion(s: Session, url: str) -> tuple:
     fed from the returned source separately, so a job may be longer than the
     ring.
 
+    ``warn_bytes`` and ``reject_bytes`` bound the body held in memory, not the
+    job (see PULSE_WARN_BYTES). The declared length is checked before a byte is
+    taken, and the running total is checked as it arrives, because a service
+    that declares nothing - or declares wrongly - would otherwise be trusted
+    with all the memory there is. Either may be 0 to lift it.
+
     :param s: Requests Session object
     :param url: Target URL
+    :param warn_bytes: log a body at or past this size
+    :param reject_bytes: refuse a body past this size
     """
     r = request(s, url, 'GET', stream=True)
     if not r:
         logger.error('pulse data download failed')
         return False, None
+    declared = _declared_length(r)
+    if reject_bytes and declared > reject_bytes:
+        logger.error('refusing the job: the service declares %d bytes of pulse data, '
+                     'past the %d this machine will hold' % (declared, reject_bytes))
+        r.close()
+        return False, None
     body = bytearray()
     for piece in _body_stream(r):
         body += piece
+        if reject_bytes and len(body) > reject_bytes:
+            logger.error('refusing the job: the download passed the %d bytes this '
+                         'machine will hold (%d declared)' % (reject_bytes, declared))
+            r.close()
+            return False, None
+    if warn_bytes and len(body) >= warn_bytes:
+        logger.warning('this job is %d bytes of pulse data, past the %d that is '
+                       'the usual ceiling; the machine will run it' % (len(body), warn_bytes))
     try:
         source = PulseSource(body)
     except PulseSourceError as e:

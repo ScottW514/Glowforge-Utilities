@@ -5,6 +5,7 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+import logging
 from io import BytesIO
 from queue import Queue
 
@@ -167,12 +168,21 @@ def _fake_puls(body: bytes) -> bytes:
 
 
 class _StreamResp:
-    def __init__(self, data):
+    def __init__(self, data, declared=None):
         self._data = data
+        # A real service declares the body length; some do not, and one may
+        # declare it wrongly, which is why the guards check both.
+        self.headers = {} if declared is None else {'content-length': str(declared)}
+        self.closed = False
+        self.chunks_read = 0
 
     def iter_content(self, chunk_size=1024):
         for i in range(0, len(self._data), chunk_size):
+            self.chunks_read += 1
             yield self._data[i:i + chunk_size]
+
+    def close(self):
+        self.closed = True
 
 
 def test_load_motion_writes_body_and_no_disk_filler(tmp_path, monkeypatch):
@@ -341,3 +351,78 @@ def test_load_motion_reraises_ring_full(monkeypatch):
 
     with pytest.raises(OSError):
         ws.load_motion(None, 'http://x', _RingFull())
+
+
+# ---- A1: what the machine will hold in memory ------------------------------
+#
+# A print arrives as one compressed body and is held whole while the ring is
+# fed from it, so the body is the thing that has to be bounded. These are
+# memory guards, not ring guards: job length is the feeder's business.
+
+def test_fetch_motion_refuses_a_declared_body_past_the_limit(monkeypatch):
+    resp = _StreamResp(_fake_puls(bytes(4096)), declared=4096)
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: resp)
+
+    info, source = ws.fetch_motion(None, 'http://x', reject_bytes=1024)
+
+    assert info is False and source is None
+    assert resp.chunks_read == 0        # refused before a byte was taken
+    assert resp.closed
+
+
+def test_fetch_motion_refuses_an_undeclared_body_that_runs_past_the_limit(monkeypatch):
+    # No content-length, so the only guard left is the running total: a
+    # service that declares nothing must not be trusted with all the memory
+    # there is.
+    resp = _StreamResp(_fake_puls(bytes(300000)))
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: resp)
+
+    info, source = ws.fetch_motion(None, 'http://x', reject_bytes=65536)
+
+    assert info is False and source is None
+    assert resp.chunks_read > 0         # this one is caught on the way in
+    assert resp.closed
+
+
+def test_fetch_motion_refuses_a_body_that_outruns_its_own_declaration(monkeypatch):
+    # A declaration under the limit does not license a body over it.
+    resp = _StreamResp(_fake_puls(bytes(300000)), declared=1024)
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: resp)
+
+    info, source = ws.fetch_motion(None, 'http://x', reject_bytes=65536)
+
+    assert info is False and source is None
+    assert resp.closed
+
+
+def test_fetch_motion_runs_a_job_at_the_limit(monkeypatch):
+    data = _fake_puls(bytes(1000))
+    resp = _StreamResp(data, declared=len(data))
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: resp)
+
+    info, source = ws.fetch_motion(None, 'http://x', reject_bytes=len(data))
+
+    assert info and source is not None
+    assert source.body_size == len(data)
+    assert not resp.closed              # the caller still owns a live source
+
+
+def test_fetch_motion_warns_past_the_warning_level_and_runs_the_job(monkeypatch, caplog):
+    data = _fake_puls(bytes(2048))
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: _StreamResp(data, declared=len(data)))
+
+    with caplog.at_level(logging.WARNING):
+        info, source = ws.fetch_motion(None, 'http://x', warn_bytes=1024, reject_bytes=0)
+
+    assert info and source is not None   # a warning is a log line, not a refusal
+    assert any('past the' in r.getMessage() for r in caplog.records)
+
+
+def test_fetch_motion_limits_lift_at_zero(monkeypatch):
+    data = _fake_puls(bytes(200000))
+    monkeypatch.setattr(ws, 'request', lambda *a, **k: _StreamResp(data, declared=len(data)))
+
+    info, source = ws.fetch_motion(None, 'http://x', warn_bytes=0, reject_bytes=0)
+
+    assert info and source is not None
+    assert source.body_size == len(data)
