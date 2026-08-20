@@ -21,6 +21,7 @@ import websocket
 from gfutilities._common import *
 from gfutilities.configuration import get_cfg, set_cfg
 from gfutilities.puls import decode_all_steps
+from gfutilities.puls.source import PulseSource, PulseSourceError
 
 start_time = time.time()
 response_id = 31
@@ -365,9 +366,81 @@ def check_puls_header(header: dict, serial: Any = None) -> Union[str, None]:
     return None
 
 
+# Bytes taken off the socket, and handed to the ring, at a time.
+_DOWNLOAD_CHUNK = 64 * 1024
+_WRITE_CHUNK = 256 * 1024
+
+
+def _body_stream(r, chunk: int = _DOWNLOAD_CHUNK):
+    """The body exactly as the service sent it, in pieces.
+
+    The service serves pulse data compressed, tens to one, so keeping it
+    undecoded is what lets a job of any length sit in a few MB of memory.
+    A response that cannot hand over its raw stream falls back to the decoded
+    one, which costs only memory.
+    """
+    raw = getattr(r, 'raw', None)
+    if raw is not None and hasattr(raw, 'stream'):
+        return raw.stream(chunk, decode_content=False)
+    return r.iter_content(chunk_size=chunk)
+
+
+def fetch_motion(s: Session, url: str) -> tuple:
+    """Downloads a motion/print job into memory and parses its header.
+
+    Returns ``(info, source)``, or ``(False, None)`` if the job is not one
+    this machine will run. Nothing is written to the machine here: the ring is
+    fed from the returned source separately, so a job may be longer than the
+    ring.
+
+    :param s: Requests Session object
+    :param url: Target URL
+    """
+    r = request(s, url, 'GET', stream=True)
+    if not r:
+        logger.error('pulse data download failed')
+        return False, None
+    body = bytearray()
+    for piece in _body_stream(r):
+        body += piece
+    try:
+        source = PulseSource(body)
+    except PulseSourceError as e:
+        logger.error('%s' % e)
+        return False, None
+    # Validate everything the run-time math depends on BEFORE the first byte
+    # reaches the ring: a refusal past that point leaves a job loaded with
+    # nobody to run it.
+    reason = check_puls_header(source.header, get_cfg('MACHINE.SERIAL'))
+    if reason is not None:
+        logger.error('refusing the job: %s' % reason)
+        return False, None
+    logger.info('pulse data is %s, %d byte body' %
+                ('gzip-compressed' if source.compressed else 'uncompressed',
+                 source.body_size))
+    info = {
+        'header_data': source.header,
+        'header_len': source.header_len,
+        'size': 0,
+        'run_time': None,
+        'stats': None,
+    }
+    return info, source
+
+
+def motion_run_time(info: dict, size: int) -> timedelta:
+    """Playing time of ``size`` payload bytes at the job's step frequency."""
+    return timedelta(seconds=size / info['header_data']['STfr'])
+
+
 def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
     """
-    Downloads motion/print file, parses header
+    Downloads a motion/print file and writes all of it out.
+
+    This is the whole-job path: everything is enqueued before anything plays,
+    so the destination has to be able to take the entire job. A job longer
+    than the ring is fed with gfhardware's feeder instead.
+
     :param s: Requests Session object
     :type s: Session
     :param url: Target URL
@@ -377,13 +450,10 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
     :return: Header dict or False on failure
     :rtype: Union[dict, bool]
     """
-    r = request(s, url, 'GET', stream=True)
-    info = {
-        'header_data': {},
-        'header_len': 0,
-        'size': 0,
-        'run_time': None,
-    }
+    info, source = fetch_motion(s, url)
+    if not info:
+        return False
+
     # out_file may be a path or an already-open binary file object. A machine
     # streaming to the exclusive-open pulse device holds one flock'd fd for
     # the whole job (the kernel dead man's switch) and passes it in here; in
@@ -393,95 +463,69 @@ def load_motion(s: Session, url: str, out_file) -> Union[dict, bool]:
         out_ctx = nullcontext(out_file)
     else:
         out_ctx = open(out_file, 'wb')
-    with out_ctx as f:
-        res = r.iter_content(chunk_size=1024)
-        puls_data = next(res)
-        if puls_data[1:4].decode() != 'GF1':
-            logger.error('received data not a GF puls file')
-            return False
-        total_header = _byte_to_int(puls_data[4:8])
-        # iter_content() only guarantees *up to* chunk_size bytes per chunk, and the
-        # header has grown past 1 KB on newer firmware, so it can span several chunks.
-        # Buffer until the whole header is present before parsing it.
-        while len(puls_data) < total_header:
-            try:
-                puls_data += next(res)
-            except StopIteration:
-                logger.error('puls file ended before header was complete')
-                return False
-        info['header_len'] = total_header - 8
-        pos = 8
-        while pos < total_header:
-            info['header_data'][puls_data[pos:pos + 4].decode()] = _byte_to_int(puls_data[pos + 4:pos + 8])
-            pos += 8
-        # Validate everything the run-time math depends on BEFORE the first
-        # byte reaches the ring: a raise past this point would leave a whole
-        # job loaded with nobody to run it.
-        reason = check_puls_header(info['header_data'], get_cfg('MACHINE.SERIAL'))
-        if reason is not None:
-            logger.error('refusing the job: %s' % reason)
-            return False
-        stfr = info['header_data']['STfr']
-        size = len(puls_data[pos:])
-        stat = decode_all_steps(puls_data[pos:])
-        # Optional debug capture of the raw job, off by default (it copies
-        # every job into the capture directory, LOGGING.DIR). Enable with
-        # LOGGING.SAVE_PULS.
-        save_puls = get_cfg('LOGGING.SAVE_PULS') and get_cfg('LOGGING.DIR')
-        raw = None
-        base_file_name = None
-        if save_puls:
-            base_file_name = '%s/%s' % (get_cfg('LOGGING.DIR'),
-                                        time.strftime("%Y-%m-%d_%H%M%S"))
-            try:
-                raw = open(base_file_name + '.puls', 'wb')
-                raw.write(puls_data)
-            except OSError as e:
-                # The capture is a debug aid and never costs a job: a missing
-                # directory or a full disk drops it and the print runs on.
-                logger.warning('pulse capture disabled: %s' % e)
-                if raw:
-                    raw.close()
-                raw = None
-                save_puls = False
+
+    # Optional debug capture of the raw job, off by default (it copies every
+    # job into the capture directory, LOGGING.DIR). Enable with
+    # LOGGING.SAVE_PULS.
+    save_puls = get_cfg('LOGGING.SAVE_PULS') and get_cfg('LOGGING.DIR')
+    raw = None
+    base_file_name = None
+    if save_puls:
+        base_file_name = '%s/%s' % (get_cfg('LOGGING.DIR'),
+                                    time.strftime("%Y-%m-%d_%H%M%S"))
         try:
-            f.write(puls_data[pos:])
-            for chunk in res:
-                if chunk:
-                    size = size + len(chunk)
-                    stat = decode_all_steps(chunk, stat)
-                    f.write(chunk)
-                    if raw:
-                        try:
-                            raw.write(chunk)
-                        except OSError as e:
-                            logger.warning('pulse capture stopped: %s' % e)
-                            raw.close()
-                            raw = None
-                            save_puls = False
+            raw = open(base_file_name + '.puls', 'wb')
+            raw.write(source.header_raw)
         except OSError as e:
-            # The pulse device rejects a write once its ring is full (-ENOMEM),
-            # i.e. the job is larger than the device can buffer. Log a clear
-            # reason and re-raise so the caller safes the machine, rather than
-            # surfacing a bare OSError. (Streaming-during-run to lift the ring
-            # cap is a separate, hardware-coupled change.)
+            # The capture is a debug aid and never costs a job: a missing
+            # directory or a full disk drops it and the print runs on.
+            logger.warning('pulse capture disabled: %s' % e)
+            if raw:
+                raw.close()
+            raw = None
+            save_puls = False
+
+    size = 0
+    stat = None
+    with out_ctx as f:
+        try:
+            while True:
+                chunk = source.read(_WRITE_CHUNK)
+                if not chunk:
+                    break
+                size += len(chunk)
+                stat = decode_all_steps(chunk, stat)
+                f.write(chunk)
+                if raw:
+                    try:
+                        raw.write(chunk)
+                    except OSError as e:
+                        logger.warning('pulse capture stopped: %s' % e)
+                        raw.close()
+                        raw = None
+                        save_puls = False
+        except OSError as e:
+            # The pulse device rejects a write once its ring is full
+            # (-ENOMEM), i.e. the job is larger than the device can buffer.
+            # Log a clear reason and re-raise so the caller safes the machine.
             logger.error('pulse write failed after %d bytes - the job may exceed '
                          'the device ring capacity: %s' % (size, e))
             raise
         finally:
             if raw:
                 raw.close()
-        info['size'] = size
-        info['run_time'] = timedelta(seconds=size / stfr)
-        info['stats'] = stat
-        if save_puls:
-            try:
-                with open(base_file_name + '.info', 'w') as jf:
-                    jf.write(json.dumps(info, sort_keys=True, indent=4,
-                                        default=str) + '\n')
-            except OSError as e:
-                logger.warning('pulse capture info not written: %s' % e)
-        return info
+
+    info['size'] = size
+    info['run_time'] = motion_run_time(info, size)
+    info['stats'] = stat
+    if save_puls:
+        try:
+            with open(base_file_name + '.info', 'w') as jf:
+                jf.write(json.dumps(info, sort_keys=True, indent=4,
+                                    default=str) + '\n')
+        except OSError as e:
+            logger.warning('pulse capture info not written: %s' % e)
+    return info
 
 
 def request(s: Session, url: str, method: str, timeout: int = 15, stream: bool = False,
