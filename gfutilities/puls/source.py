@@ -5,8 +5,11 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+import logging
 import struct
 import zlib
+
+from gfutilities._common import LOGGER_NAME
 
 # Bytes of the body handed to the inflater at a time. Small enough that one
 # pass cannot expand into a large allocation, large enough that a job is not
@@ -14,6 +17,12 @@ import zlib
 _INPUT_CHUNK = 64 * 1024
 
 _GZIP_MAGIC = b'\x1f\x8b'
+
+# A gzip stream ends with a four-byte uncompressed-length trailer (ISIZE)
+# behind a four-byte CRC, and the shortest possible stream is 18 bytes.
+_GZIP_MIN = 18
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class PulseSourceError(Exception):
@@ -45,7 +54,9 @@ class PulseSource:
         self.header = {}
         self.header_len = 0
         self.header_raw = b''
+        self.program_size = None
         self._parse_header()
+        self._measure_program()
 
     # -- header ----------------------------------------------------------
     def _parse_header(self) -> None:
@@ -64,6 +75,37 @@ class PulseSource:
         self.header_len = total - 8
         self.header_raw = bytes(self._out[:total])
         del self._out[:total]
+
+    # -- how long the job is ---------------------------------------------
+    def _measure_program(self) -> None:
+        """Learn the job's whole length without inflating the whole job.
+
+        Anything reporting progress needs a denominator, and the one number
+        that must never be it is a counter that grows: under a live feed the
+        kernel's byte total climbs as the ring is topped up, so a report
+        divided by it would sit near complete for an entire long print. The
+        job's own length does not move. A plain body carries it in its size;
+        a compressed one carries it in the gzip ISIZE trailer, exact for any
+        job short of 4 GiB, which is a hundred hours of cutting.
+
+        Left as None when the number cannot be trusted, which the caller
+        reports around rather than guesses at.
+        """
+        header_bytes = self.header_len + 8
+        if self._decomp is None:
+            self.program_size = max(0, len(self._body) - header_bytes)
+            return
+        if len(self._body) < _GZIP_MIN:
+            return
+        isize = struct.unpack_from('<I', self._body, len(self._body) - 4)[0]
+        if isize < header_bytes:
+            # A truncated body, a multi-member stream, or a job past what
+            # the trailer can count: not a number to divide by.
+            logger.warning('pulse body declares %d inflated bytes against a '
+                           '%d byte header; job length unknown',
+                           isize, header_bytes)
+            return
+        self.program_size = isize - header_bytes
 
     # -- payload ---------------------------------------------------------
     def _fill(self, want: int) -> None:

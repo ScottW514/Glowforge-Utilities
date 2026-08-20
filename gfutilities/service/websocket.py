@@ -638,6 +638,42 @@ def send_wss_event(msg_q_tx: Queue, action_id: Union[int, None], event: str, **k
                  (rid, int(((time.time() - start_time) * 100) + 3800), action_id, event, data))
 
 
+def send_wss_progress(msg_q_tx: Queue, action_id: Union[int, None], progress: str,
+                      current: int, units: str = 'steps', total: int = None,
+                      values: dict = None) -> None:
+    """Report how far along a job is, on the carrier the app reads.
+
+    The progress bar rides an outbound ``type:"progress"`` frame, and that
+    frame is also the periodic settings report: whatever machine values ride
+    along go in its ``settings.values`` block. The factory sends one at every
+    phase transition and one every 30 s in between, ``current`` in bytes for
+    a transfer and in playback ticks for a run.
+
+    A frame that cannot be sent is dropped rather than queued: progress is
+    perishable, and the next one is thirty seconds behind it.
+    """
+    global response_id
+    global start_time
+    if msg_q_tx.qsize() >= TX_QUEUE_MAX:
+        logger.warning('event TX queue full (socket down?); dropping %s' % progress)
+        return
+    with _response_id_lock:      # called from several threads
+        response_id += 1
+        rid = response_id
+
+    frame = '{"id":%s,"timestamp":%s,"type":"progress","version":1,' % (
+        rid, int(((time.time() - start_time) * 100) + 3800))
+    if action_id is not None:
+        frame += '"action_id":%s,' % action_id
+    frame += '"progress":"%s","current":%d,"units":"%s"' % (progress, int(current), units)
+    if total is not None:
+        frame += ',"total":%d' % int(total)
+    if values:
+        frame += ',"settings":{"values":%s}' % json.dumps(values, sort_keys=True,
+                                                          separators=(',', ':'))
+    msg_q_tx.put(frame + '}\n')
+
+
 def update_header(s: Session, header: str, value: str) -> bool:
     """
     Adds persistent header to Session
