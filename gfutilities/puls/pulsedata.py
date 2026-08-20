@@ -5,6 +5,8 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
+from collections import Counter
+
 _decode_step_codes = {
     'LE': {'mask': 0b00010000, 'test': 0b00010000},  # Laser Enable (ON)
     'LP': {'mask': 0b10000000, 'test': 0b01111111},  # Laser Power Setting
@@ -20,36 +22,58 @@ _decode_step_codes = {
 
 _SPEED = 1000
 
+# The counters decode_all_steps() reports, in report order.
+_COUNT_KEYS = ('XP', 'XN', 'XTOT', 'XEND', 'YP', 'YN', 'YTOT', 'YEND',
+               'ZP', 'ZN', 'ZTOT', 'ZEND', 'LE', 'LP')
+_COUNT_INDEX = {key: i for i, key in enumerate(_COUNT_KEYS)}
+
+
+def _build_step_deltas() -> tuple:
+    """What one pulse byte contributes to each counter, for all 256 values.
+
+    A step byte carries every axis and the laser at once, so its meaning is a
+    pure function of its value: precompute the contribution once and a job of
+    any length costs one histogram plus 256 table rows. A print runs to tens of
+    millions of steps, which is more than a per-byte decode can carry.
+
+    Each row is the tuple of (counter index, delta) pairs that are non-zero.
+    """
+    table = []
+    for value in range(256):
+        deltas = [0] * len(_COUNT_KEYS)
+        if value & _decode_step_codes['LP']['mask']:
+            # Power setting: the byte says nothing about motion or the laser.
+            deltas[_COUNT_INDEX['LP']] = 1
+        else:
+            for action, code in _decode_step_codes.items():
+                if (value & code['mask']) != code['test']:
+                    continue
+                deltas[_COUNT_INDEX[action]] += 1
+                if action == 'LE':
+                    continue
+                axis = action[0:1]
+                deltas[_COUNT_INDEX[axis + 'TOT']] += 1
+                deltas[_COUNT_INDEX[axis + 'END']] += 1 if action[1:2] == 'P' else -1
+        table.append(tuple((i, d) for i, d in enumerate(deltas) if d))
+    return tuple(table)
+
+
+_STEP_DELTAS = _build_step_deltas()
+
 
 def decode_all_steps(puls: bytes, data: dict = None, mode: tuple = (8, 2)) -> dict:
-    cnt = {
-        'XP': 0,
-        'XN': 0,
-        'XTOT': 0,
-        'XEND': 0,
-        'YP': 0,
-        'YN': 0,
-        'YTOT': 0,
-        'YEND': 0,
-        'ZP': 0,
-        'ZN': 0,
-        'ZTOT': 0,
-        'ZEND': 0,
-        'LE': 0,
-        'LP': 0,
-    }
-    for step in puls:
-        if step & _decode_step_codes['LP']['mask']:
-            # Power Setting (LP)
-            cnt['LP'] = cnt['LP'] + 1
-        else:
-            for action in sorted(_decode_step_codes):
-                if not (step & _decode_step_codes[action]['mask']) ^ _decode_step_codes[action]['test']:
-                    cnt[action] = cnt[action] + 1
-                    if action != 'LE':
-                        cnt[action[0:1] + 'TOT'] = cnt[action[0:1] + 'TOT'] + 1
-                        cnt[action[0:1] + 'END'] = cnt[action[0:1] + 'END'] + 1 \
-                            if action[1:2] == 'P' else cnt[action[0:1] + 'END'] - 1
+    """Step and laser statistics for a run of pulse bytes.
+
+    ``data`` accumulates a previous result, so a job can be decoded chunk by
+    chunk as it arrives. ``mode`` is the (XY, Z) microstep divisor the job runs
+    at, which is what turns step counts into millimeters.
+    """
+    totals = [0] * len(_COUNT_KEYS)
+    for value, count in Counter(puls).items():
+        for index, delta in _STEP_DELTAS[value]:
+            totals[index] += delta * count
+
+    cnt = dict(zip(_COUNT_KEYS, totals))
 
     for axis in ('X', 'Y'):
         cnt[axis + 'MM'] = (cnt[axis + 'END'] / mode[0]) * 0.15
