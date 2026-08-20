@@ -142,18 +142,17 @@ def test_lidar_image_uses_first_settings_entry():
 
 # ---- update_check ----------------------------------------------------------
 
-def test_update_check_acknowledges_and_skips(monkeypatch):
+def test_update_check_answers_on_the_actions_own_name(monkeypatch):
+    # Events are '<action_type>:<suffix>' from the factory's own table. The
+    # earlier 'firmware_update:check:*' events were neither: not an action
+    # type, not a suffix the table carries.
     m = StubMachine()
     m._session = None
     probed = []
     monkeypatch.setattr(basemachine, 'firmware_check', lambda s: probed.append(True))
     m.run_update_check({'action_type': 'update_check', 'id': 8, 'status': 'ready'})
     assert probed == [True]
-    assert _events(m._q_msg_tx) == [
-        'firmware_update:check:starting',
-        'firmware_update:check:completed',
-        'firmware_update:skipping',
-    ]
+    assert _events(m._q_msg_tx) == ['update_check:completed']
 
 
 def test_update_check_reports_probe_failure(monkeypatch):
@@ -165,18 +164,41 @@ def test_update_check_reports_probe_failure(monkeypatch):
 
     monkeypatch.setattr(basemachine, 'firmware_check', boom)
     m.run_update_check({'action_type': 'update_check', 'id': 8, 'status': 'ready'})
-    assert _events(m._q_msg_tx) == [
-        'firmware_update:check:starting',
-        'firmware_update:check:failed',
-    ]
+    assert _events(m._q_msg_tx) == ['update_check:failed']
+
+
+def test_update_check_never_hands_off_to_an_updater():
+    # The whole of the factory's action is starting a separate updater
+    # service, which on this machine would mean installing a factory image
+    # over ForgeFIRM. Nothing in the action surface may grow a way to spawn
+    # one, so the module that answers it holds no process API at all.
+    for name in ('subprocess', 'os'):
+        assert not hasattr(basemachine, name), \
+            'basemachine imported %s; an update hand-off would start here' % name
 
 
 # ---- factory_reset ---------------------------------------------------------
 
-def test_factory_reset_refused_without_action():
+def test_factory_reset_refused_as_a_failure_not_a_cancel():
+    # A cancel is what the service says when it withdraws an action; a
+    # failure is what a machine says when the thing did not happen, which
+    # is also what the factory reports when its reset script will not run.
     m = StubMachine()
     m.run_factory_reset({'action_type': 'factory_reset', 'id': 2, 'status': 'ready'})
-    assert _events(m._q_msg_tx) == ['factory_reset:cancelled']
+    assert _events(m._q_msg_tx) == ['factory_reset:failed']
+
+
+# ---- head_firmware_update --------------------------------------------------
+
+def test_head_firmware_update_refused():
+    # The factory pushes firmware into the head microcontroller for this
+    # one. Same class of command as a reset, same answer, and an answer
+    # rather than the silence the service would otherwise wait through.
+    m = StubMachine()
+    m.run_head_firmware_update({'action_type': 'head_firmware_update', 'id': 3,
+                                'status': 'ready',
+                                'head_firmware_filename': 'head-1.2.3.bin'})
+    assert _events(m._q_msg_tx) == ['head_firmware_update:failed']
 
 
 # ---- hunt lifecycle honors a local cancel ---------------------------------

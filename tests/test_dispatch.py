@@ -5,7 +5,8 @@ https://community.openglow.org
 
 SPDX-License-Identifier:    MIT
 """
-from gfutilities.service.dispatch import dispatch_action, PULS_ACTIONS, IMAGE_ACTIONS
+from gfutilities.service.dispatch import (dispatch_action, IMAGE_ACTIONS,
+                                          PULS_ACTIONS, SYNC_ACTIONS)
 
 
 class FakeMachine:
@@ -31,6 +32,9 @@ class FakeMachine:
 
     def run_factory_reset(self, msg):
         self.calls.append(('factory_reset', msg['id']))
+
+    def run_head_firmware_update(self, msg):
+        self.calls.append(('head_firmware_update', msg['id']))
 
 
 def _msg(action, status='ready', mid=1, **extra):
@@ -96,6 +100,52 @@ def test_factory_reset_refused():
     m = FakeMachine()
     assert dispatch_action(m, _msg('factory_reset')) == 'refused'
     assert m.calls == [('factory_reset', 1)]
+
+
+def test_head_firmware_update_refused():
+    m = FakeMachine()
+    assert dispatch_action(m, _msg('head_firmware_update')) == 'refused'
+    assert m.calls == [('head_firmware_update', 1)]
+
+
+# -- only a 'ready' one of these asks for anything --------------------------
+
+def test_sync_actions_ignore_every_status_but_ready():
+    # The service sends a cancel for actions a machine never received (a
+    # stray factory_reset cancel is on record from a factory machine's own
+    # log), and the factory ignores those rather than answering them.
+    for action in SYNC_ACTIONS:
+        for status in ('new', 'started', 'success', 'failure', 'cancelled', None):
+            m = FakeMachine()
+            assert dispatch_action(m, _msg(action, status=status)) == 'ignored'
+            assert m.calls == [], (action, status)
+
+
+def test_sync_actions_are_the_ones_with_no_job():
+    assert SYNC_ACTIONS == ('settings', 'update_check', 'factory_reset',
+                            'head_firmware_update')
+    for action in SYNC_ACTIONS:
+        assert action not in PULS_ACTIONS and action not in IMAGE_ACTIONS
+
+
+def test_a_cancel_still_reaches_a_running_job():
+    # The status gate must never sit in front of the job actions: a cancel
+    # is how a print in flight is stopped.
+    for action in ('motion', 'print', 'hunt'):
+        m = FakeMachine(accept_puls=False)
+        dispatch_action(m, _msg(action, status='cancelled'))
+        assert m.calls == [('puls', action)]
+    for action in IMAGE_ACTIONS:
+        m = FakeMachine()
+        dispatch_action(m, _msg(action, status='cancelled'))
+        assert m.calls == [('capture', action)]
+
+
+def test_focus_is_ignored_as_the_factory_ignores_it():
+    # A name the service knows and the factory application has no case for.
+    m = FakeMachine()
+    assert dispatch_action(m, _msg('focus')) == 'ignored'
+    assert m.calls == []
 
 
 def test_unknown_action_ignored():

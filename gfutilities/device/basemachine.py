@@ -244,11 +244,14 @@ class BaseMachine:
 
     def _user_image(self, msg: dict) -> None:
         """
-        Child class handler for a user-requested image.
-        Defaults to the bed (lid) view, which is what a user snapshot shows.
-        Child classes may override to select a different camera.
-        TODO(Phase E): confirm which camera the 2.6.0 service expects for
-        user_image, and whether it carries capture settings.
+        Child class handler for a user-requested image: the bed (lid) view.
+
+        Settled from the factory application. Its four image actions are one
+        class with four vtables, and user_image differs from lid_image in
+        nothing but its name: same camera (the lid one), same requirement
+        that the lid be closed. head_image and lidar_image are the pair that
+        differ, on the head camera with no lid gate. Any settings the action
+        carried are in _action_settings for the capture path to honor.
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
@@ -257,41 +260,74 @@ class BaseMachine:
 
     def run_update_check(self, msg: dict) -> None:
         """
-        Answer a firmware update_check without ever installing factory
-        firmware. Probes the advertised factory version (recorded for the
-        forgectrl compatibility banner) and acknowledges the check, then
-        reports that the update is skipped - ForgeFIRM is not the factory
-        firmware and never applies a factory image.
+        Answer an update_check without ever installing factory firmware.
+
+        The factory application does nothing else with this action: it writes
+        'u' to the runit control fifo of a separate 'glowforge-updater'
+        service and reports ':completed' (or ':failed' if that write fails).
+        No version query, no download, no install lives in the application at
+        all. ForgeFIRM has no such service and must never acquire one, so the
+        answer is the same event without the hand-off: what is left to do is
+        probe the version the service advertises, which is what the forgectrl
+        compatibility banner reads, and say the check is done.
         Interface for the action dispatch.
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
-        send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:check:starting')
         try:
             firmware_check(self._session)
         except Exception:
+            # The one honest failure here: the check itself did not happen.
             logger.exception('firmware version probe failed')
-            send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:check:failed')
+            send_wss_event(self._q_msg_tx, msg['id'], 'update_check:failed')
             return
-        send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:check:completed')
-        send_wss_event(self._q_msg_tx, msg['id'], 'firmware_update:skipping')
+        logger.info('update_check answered; ForgeFIRM never installs factory '
+                    'firmware, so there is nothing to hand off to')
+        send_wss_event(self._q_msg_tx, msg['id'], 'update_check:completed')
 
     def run_factory_reset(self, msg: dict) -> None:
         """
-        Acknowledge a factory_reset request without acting on it. A cloud
-        command must never wipe a ForgeFIRM machine, so this logs the refusal
-        and reports the action cancelled.
+        Refuse a factory_reset. A cloud command must never wipe a machine.
+
+        What the factory does with it: the action posts a command to the
+        hardware task, which tells runit not to restart the application and
+        then replaces the process with /usr/bin/factory_reset.sh, passing
+        'reboot' when the request asks for one. There is no ForgeFIRM
+        equivalent and there will not be one.
+
+        ':failed' rather than ':cancelled' is deliberate. In this protocol a
+        cancel is what the service says when it withdraws an action; failure
+        is what a machine says when the thing did not happen, which is the
+        factory's own report when the reset script cannot be launched.
         Interface for the action dispatch.
-        TODO: confirm the exact acknowledgment the 2.6.0 app
-        expects for a declined factory_reset.
         :param msg: Incoming WSS Message
         :type msg: dict
         :return:
         """
         logger.warning('factory_reset requested by service; ForgeFIRM does not '
-                       'reset on cloud command - acknowledging without action')
-        send_wss_event(self._q_msg_tx, msg['id'], 'factory_reset:cancelled')
+                       'reset on cloud command - refusing')
+        send_wss_event(self._q_msg_tx, msg['id'], 'factory_reset:failed')
+
+    def run_head_firmware_update(self, msg: dict) -> None:
+        """
+        Refuse a head_firmware_update, and say so on the wire.
+
+        The factory takes a 'head_firmware_filename' from the request, reads
+        it out of /glowforge/fw/head/ and runs /usr/bin/head-update.sh, which
+        pushes firmware into the laser head's microcontroller. That is the
+        same class of command as a factory reset and gets the same answer.
+        Silence would be worse than a refusal: the service is waiting on a
+        terminal event for the action either way.
+        Interface for the action dispatch.
+        :param msg: Incoming WSS Message
+        :type msg: dict
+        :return:
+        """
+        logger.warning('head_firmware_update requested by service (%s); '
+                       'ForgeFIRM does not flash the head on cloud command '
+                       '- refusing', msg.get('head_firmware_filename'))
+        send_wss_event(self._q_msg_tx, msg['id'], 'head_firmware_update:failed')
 
     def motion(self, msg: dict) -> None:
         """
