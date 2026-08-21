@@ -216,8 +216,7 @@ class BaseMachine:
         a flash is comes from `LLvl`, the lamp's own brightness setting, so
         a service that changes the lamp changes the flash with it.
 
-        An action that says nothing about the flash gets one, which is what
-        every capture did before the key was honored at all.
+        An action that says nothing about the flash gets one.
         :param settings: normalized per-action settings, or None
         :type settings: dict
         :return: lamp brightness, 0-255
